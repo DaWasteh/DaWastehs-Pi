@@ -1,0 +1,27 @@
+{
+  // Editor-only TypeScript config for the local pi extensions in this folder.
+  // Pi itself loads extensions via jiti and does NOT use this file; it exists
+  // solely so the VS Code TypeScript server can resolve the pi packages,
+  // `typebox`, and Node built-ins (silences the "Cannot find module" / "Cannot
+  // find name 'process'" / implicit-any errors).
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    // "Bundler" matches how jiti resolves: it understands package `exports`
+    // maps, extensionless imports, and `node:` specifiers without extra config.
+    "moduleResolution": "Bundler",
+    "lib": ["ES2023"],
+    // Requires @types/node (declared in package.json) → fixes `process`,
+    // `node:fs`, `node:path`, etc.
+    "types": ["node"],
+    "strict": true,
+    // Don't type-check the pi packages' own .d.ts files — only your code.
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
+    // Nothing is emitted; pi compiles at runtime.
+    "noEmit": true
+  },
+  "include": ["extensions/**/*.ts"]
+}

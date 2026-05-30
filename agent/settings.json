@@ -1,0 +1,26 @@
+{
+  "lastChangelogVersion": "0.78.0",
+  "defaultProvider": "google",
+  "defaultModel": "gemma-4-31b-it",
+  "packages": [
+    "npm:pi-llama-cpp",
+    "npm:pi-mcp-adapter",
+    "npm:pi-web-access",
+    "npm:pi-hermes-memory",
+    "npm:@casualjim/pi-heimdall"
+  ],
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 32768,
+    "keepRecentTokens": 131072
+  },
+  "thinkingBudgets": {
+    "minimal": 2048,
+    "low": 8192,
+    "medium": 32768,
+    "high": 65536
+  },
+  "defaultThinkingLevel": "high",
+  "theme": "stargate-sg1",
+  "httpIdleTimeoutMs": 0
+}

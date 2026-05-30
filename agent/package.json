@@ -1,0 +1,13 @@
+{
+  "name": "pi-agent-extensions",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local pi extensions. These devDependencies exist ONLY so the editor (VS Code / tsserver) can resolve imports. Pi loads the extensions via jiti at runtime using its own bundled copies of these packages, so nothing here changes runtime behaviour.",
+  "devDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-tui": "*",
+    "@types/node": "^22",
+    "typebox": "npm:@sinclair/typebox@*"
+  }
+}
