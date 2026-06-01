@@ -212,7 +212,7 @@ function buildGate(theme: Theme, beamWidth: number): string[] {
 
 	// 3) Erde-Chevron oben: roter Kern mit Gold-Flügeln auf dem Ring.
 	if (cx - 1 >= 0) G[0][cx - 1] = { c: "◣", k: "accent" };
-	G[0][cx] = { c: "◆", k: "error" };
+	G[0][cx] = { c: "Å", k: "error" };
 	if (cx + 1 < cols) G[0][cx + 1] = { c: "◢", k: "accent" };
 
 	// 4) Beam-Zelle (volle Breite, nur auf der Mittelzeile) mit Emitter-Spitzen.
@@ -249,17 +249,6 @@ function buildGate(theme: Theme, beamWidth: number): string[] {
 	}
 
 	return out;
-}
-
-/**
- * A-Frame-Standfuß unter dem Gate (wie in der Vorlage). Schmal oben, nach unten
- * spreizend; liefert fertige, `beamWidth` breite, zentrierte Zeilen.
- */
-function buildStand(theme: Theme, beamWidth: number): string[] {
-	const legs = ["╱ ╲", "╱   ╲", "╱     ╲"];
-	return legs.map((s, i) =>
-		fg(theme, i < 2 ? "muted" : "dim", padCenter(s, beamWidth)),
-	);
 }
 
 /**
@@ -334,13 +323,12 @@ function renderFullHeader(theme: Theme, model: ModelInfo | undefined, width: num
 	lines.push("");
 	lines.push(indented(pad, buildCrown(theme, beamWidth)));
 	for (const row of buildGate(theme, beamWidth)) lines.push(indented(pad, row));
-	for (const row of buildStand(theme, beamWidth)) lines.push(indented(pad, row));
 	lines.push(indented(pad, buildReflection(theme, beamWidth)));
 
 	// Titel.
 	lines.push("");
-	lines.push(motif(theme, pad, "STARGATE COMMAND  //  PI CONSOLE", beamWidth, "accent"));
-	lines.push(motif(theme, pad, "OFFWORLD LINK ACTIVE", beamWidth, "text"));
+	lines.push(motif(theme, pad, "─── ✦  STARGATE COMMAND  ✦ ───", beamWidth, "accent"));
+	lines.push(motif(theme, pad, "P I   C O N S O L E   //   S G C   O F F W O R L D   L I N K", beamWidth, "text"));
 
 	// Offene Haarlinie (keine Box – Enden bleiben offen).
 	lines.push(indented(pad, fg(theme, "border", "─".repeat(beamWidth))));

@@ -1,7 +1,7 @@
 {
   "lastChangelogVersion": "0.78.0",
   "defaultProvider": "google",
-  "defaultModel": "gemma-4-31b-it",
+  "defaultModel": "gemini-flash-latest",
   "packages": [
     "npm:pi-llama-cpp",
     "npm:pi-mcp-adapter",
@@ -20,7 +20,7 @@
     "medium": 32768,
     "high": 65536
   },
-  "defaultThinkingLevel": "high",
+  "defaultThinkingLevel": "off",
   "theme": "stargate-sg1",
   "httpIdleTimeoutMs": 0
 }

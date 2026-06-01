@@ -3,8 +3,7 @@
 Personal configuration for the [Pi coding agent](https://pi.dev): a custom
 theme, three local TypeScript extensions, and a few installed pi packages.
 
-> Note: this README was regenerated and may not match an earlier hand-written
-> version. Merge anything you want to keep.
+![Header](image.png)
 
 ## Layout
 

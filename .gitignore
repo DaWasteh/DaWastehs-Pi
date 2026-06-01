@@ -3,6 +3,7 @@ auth.json
 .env
 .env.*
 !.env.example
+settings.json
 
 # --- Dependencies ---
 node_modules/
