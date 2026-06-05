@@ -5,14 +5,11 @@
  * Layout. Statt einer fixen 44-Zeichen-Box wird die volle Terminalbreite
  * genutzt (zentriert, gecappt bei MAX_WIDTH), ohne Links/Rechts-Rahmen.
  *
- * Hero-Element ist ein rundes Stargate als Block-/Pixelart-Kunstwerk:
- *  - oben eine breite, abgedimmte Chevron-Krone über die ganze Konsole
- *  - mittig der gerundete Steinring mit blau schimmerndem Event-Horizon und
- *    treibenden Adress-Glyphen, Chevron-Lichtern rund herum und dem rot
- *    leuchtenden Erde-Chevron oben
- *  - der Event-Horizon-Beam tritt auf der Ring-Mittelzeile horizontal aus und
- *    läuft mit glühenden Emitter-Spitzen über die volle Breite
- *  - darunter der A-Frame-Standfuß und ein schwaches Reflexions-Echo
+ * Hero-Element ist die Stargate-Pixelart aus `Downloads/idea.webp`/
+ * `extensions/assets/stargate-pixelart.png`; der Text darunter bleibt
+ * unverändert. Falls das Terminal keine Inline-Bilder unterstützt, wird das
+ * Bild als ANSI-Truecolor-Blockgrafik gerendert statt als `[Image: ...]`-Text.
+ * Nur wenn die Datei fehlt, fällt der Header auf die alte Blockart zurück.
  * Alles breiten-adaptiv (zentriert, gecappt bei MAX_WIDTH), ohne Box-Rahmen.
  *
  * Darunter: STARGATE COMMAND // PI CONSOLE, Clearance, Connection, Tools.
@@ -25,9 +22,16 @@
 import type { Skill } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
 import { VERSION } from "@earendil-works/pi-coding-agent";
-import { visibleWidth, truncateToWidth } from "@earendil-works/pi-tui";
+import {
+	Image,
+	getCapabilities,
+	getCellDimensions,
+	visibleWidth,
+	truncateToWidth,
+} from "@earendil-works/pi-tui";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, join, extname } from "node:path";
+import { inflateSync } from "node:zlib";
 
 // ─── KONFIGURATION ─────────────────────────────────────────────────────────
 
@@ -41,6 +45,11 @@ const SIDE_MARGIN = 2;
 const DOT = "•";
 const CHECK = "✓";
 const WARN = "⚠";
+const GATE_IMAGE_FILENAME = "stargate-pixelart.png";
+const GATE_IMAGE_MIME = "image/png";
+const GATE_IMAGE_MAX_WIDTH_CELLS = 58;
+const GATE_IMAGE_MAX_HEIGHT_CELLS = 16;
+// Quelle: https://preview.redd.it/i-did-some-stargate-themed-pixelart-v0-8c5las6p2kq81.png?width=288&format=png&auto=webp&s=281e9e8e86ee6573913d9a83fd5e93a477da5117
 
 /**
  * "Adress-Glyphen" für den Beam. Bewusst gut unterstützte geometrische
@@ -69,6 +78,15 @@ const state = {
 	skills: [] as string[],
 	extensions: [] as string[],
 };
+
+let cachedGateImageBase64: string | undefined;
+let attemptedGateImageLoad = false;
+
+type Rgba = { r: number; g: number; b: number; a: number };
+type ParsedPng = { width: number; height: number; pixels: Uint8Array };
+
+let cachedGatePng: ParsedPng | null | undefined;
+const cachedAnsiGateRows = new Map<string, string[]>();
 
 // ─── ALLGEMEINE HELFER ───────────────────────────────────────────────────────
 
@@ -128,6 +146,239 @@ function fitPlain(text: any, width: number): string {
 	const truncated = truncateToWidth(safe, width);
 	const w = visibleWidth(truncated);
 	return w >= width ? truncated : truncated + " ".repeat(width - w);
+}
+
+function loadGateImageBase64(): string | undefined {
+	if (attemptedGateImageLoad) return cachedGateImageBase64;
+	attemptedGateImageLoad = true;
+
+	try {
+		cachedGateImageBase64 = readFileSync(
+			join(agentDir(), "extensions", "assets", GATE_IMAGE_FILENAME),
+		).toString("base64");
+	} catch {
+		cachedGateImageBase64 = undefined;
+	}
+
+	return cachedGateImageBase64;
+}
+
+function paethPredictor(a: number, b: number, c: number): number {
+	const p = a + b - c;
+	const pa = Math.abs(p - a);
+	const pb = Math.abs(p - b);
+	const pc = Math.abs(p - c);
+	if (pa <= pb && pa <= pc) return a;
+	if (pb <= pc) return b;
+	return c;
+}
+
+function parsePalettePng(buffer: Buffer): ParsedPng | null {
+	const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+	for (let i = 0; i < pngSignature.length; i++) {
+		if (buffer[i] !== pngSignature[i]) return null;
+	}
+
+	let width = 0;
+	let height = 0;
+	let bitDepth = 0;
+	let colorType = 0;
+	let interlace = 0;
+	let palette = new Uint8Array();
+	let transparency = new Uint8Array();
+	const idatChunks: Buffer[] = [];
+
+	let offset = 8;
+	while (offset + 8 <= buffer.length) {
+		const length = buffer.readUInt32BE(offset);
+		const type = buffer.slice(offset + 4, offset + 8).toString("ascii");
+		const dataStart = offset + 8;
+		const dataEnd = dataStart + length;
+		const data = buffer.subarray(dataStart, dataEnd);
+
+		if (type === "IHDR") {
+			width = data.readUInt32BE(0);
+			height = data.readUInt32BE(4);
+			bitDepth = data[8];
+			colorType = data[9];
+			interlace = data[12];
+		} else if (type === "PLTE") {
+			palette = new Uint8Array(data);
+		} else if (type === "tRNS") {
+			transparency = new Uint8Array(data);
+		} else if (type === "IDAT") {
+			idatChunks.push(Buffer.from(data));
+		} else if (type === "IEND") {
+			break;
+		}
+
+		offset = dataEnd + 4; // CRC
+	}
+
+	// The bundled pixel-art is an 8-bit indexed PNG. Keeping the decoder scoped
+	// to that format avoids a runtime dependency just for a terminal fallback.
+	if (!width || !height || bitDepth !== 8 || colorType !== 3 || interlace !== 0) return null;
+	if (palette.length === 0 || idatChunks.length === 0) return null;
+
+	const inflated = inflateSync(Buffer.concat(idatChunks));
+	const stride = width;
+	const pixels = new Uint8Array(width * height * 4);
+	let src = 0;
+	let prev = new Uint8Array(stride);
+
+	for (let y = 0; y < height; y++) {
+		const filter = inflated[src++];
+		const cur = new Uint8Array(stride);
+		for (let x = 0; x < stride; x++) {
+			const raw = inflated[src++];
+			const left = x > 0 ? cur[x - 1] : 0;
+			const up = prev[x] ?? 0;
+			const upLeft = x > 0 ? prev[x - 1] : 0;
+			let value: number;
+			switch (filter) {
+				case 0:
+					value = raw;
+					break;
+				case 1:
+					value = raw + left;
+					break;
+				case 2:
+					value = raw + up;
+					break;
+				case 3:
+					value = raw + Math.floor((left + up) / 2);
+					break;
+				case 4:
+					value = raw + paethPredictor(left, up, upLeft ?? 0);
+					break;
+				default:
+					return null;
+			}
+
+			const paletteIndex = value & 0xff;
+			cur[x] = paletteIndex;
+
+			const paletteOffset = paletteIndex * 3;
+			const dst = (y * width + x) * 4;
+			pixels[dst] = palette[paletteOffset] ?? 0;
+			pixels[dst + 1] = palette[paletteOffset + 1] ?? 0;
+			pixels[dst + 2] = palette[paletteOffset + 2] ?? 0;
+			pixels[dst + 3] = transparency[paletteIndex] ?? 255;
+		}
+		prev = cur;
+	}
+
+	return { width, height, pixels };
+}
+
+function loadGatePng(): ParsedPng | null {
+	if (cachedGatePng !== undefined) return cachedGatePng;
+	try {
+		cachedGatePng = parsePalettePng(
+			readFileSync(join(agentDir(), "extensions", "assets", GATE_IMAGE_FILENAME)),
+		);
+	} catch {
+		cachedGatePng = null;
+	}
+	return cachedGatePng;
+}
+
+function pixelAt(png: ParsedPng, x: number, y: number): Rgba {
+	const offset = (y * png.width + x) * 4;
+	return {
+		r: png.pixels[offset] ?? 0,
+		g: png.pixels[offset + 1] ?? 0,
+		b: png.pixels[offset + 2] ?? 0,
+		a: png.pixels[offset + 3] ?? 0,
+	};
+}
+
+function sameRgb(a: Rgba, b: Rgba): boolean {
+	return a.r === b.r && a.g === b.g && a.b === b.b;
+}
+
+function fgRgb(p: Rgba): string {
+	return `\x1b[38;2;${p.r};${p.g};${p.b}m`;
+}
+
+function bgRgb(p: Rgba): string {
+	return `\x1b[48;2;${p.r};${p.g};${p.b}m`;
+}
+
+function pixelPairToCell(top: Rgba, bottom: Rgba): string {
+	const topVisible = top.a > 24;
+	const bottomVisible = bottom.a > 24;
+	if (!topVisible && !bottomVisible) return " ";
+	if (topVisible && bottomVisible) {
+		if (sameRgb(top, bottom)) return `${fgRgb(top)}█\x1b[0m`;
+		return `${fgRgb(top)}${bgRgb(bottom)}▀\x1b[0m`;
+	}
+	if (topVisible) return `${fgRgb(top)}▀\x1b[0m`;
+	return `${fgRgb(bottom)}▄\x1b[0m`;
+}
+
+function buildAnsiGateImage(beamWidth: number): string[] | undefined {
+	const png = loadGatePng();
+	if (!png) return undefined;
+
+	const imageWidth = Math.max(1, Math.min(beamWidth - 2, GATE_IMAGE_MAX_WIDTH_CELLS));
+	const cellAspect = getCellDimensions().widthPx / getCellDimensions().heightPx;
+	const imageRows = Math.max(
+		1,
+		Math.min(
+			GATE_IMAGE_MAX_HEIGHT_CELLS,
+			Math.round(imageWidth * (png.height / png.width) * cellAspect),
+		),
+	);
+	const cacheKey = `${beamWidth}:${imageWidth}:${imageRows}`;
+	const cached = cachedAnsiGateRows.get(cacheKey);
+	if (cached) return cached;
+
+	const imagePad = Math.max(0, Math.floor((beamWidth - imageWidth) / 2));
+	const sampleRows = imageRows * 2;
+	const lines: string[] = [];
+	for (let row = 0; row < imageRows; row++) {
+		let line = " ".repeat(imagePad);
+		for (let col = 0; col < imageWidth; col++) {
+			const sx = Math.min(png.width - 1, Math.floor(((col + 0.5) * png.width) / imageWidth));
+			const syTop = Math.min(png.height - 1, Math.floor((((row * 2) + 0.5) * png.height) / sampleRows));
+			const syBottom = Math.min(png.height - 1, Math.floor((((row * 2) + 1.5) * png.height) / sampleRows));
+			line += pixelPairToCell(pixelAt(png, sx, syTop), pixelAt(png, sx, syBottom));
+		}
+		lines.push(line);
+	}
+
+	cachedAnsiGateRows.set(cacheKey, lines);
+	return lines;
+}
+
+function buildGateImage(theme: Theme, beamWidth: number): string[] | undefined {
+	const imageBase64 = loadGateImageBase64();
+	if (!imageBase64) return buildAnsiGateImage(beamWidth);
+
+	// Windows Terminal/VS Code expose truecolor but no inline-image protocol.
+	// In that case render the actual pixel art as ANSI block cells instead of
+	// letting Image fall back to "[Image: ...]" text.
+	if (!getCapabilities().images) return buildAnsiGateImage(beamWidth);
+
+	const imageWidth = Math.max(1, Math.min(beamWidth - 2, GATE_IMAGE_MAX_WIDTH_CELLS));
+	const imagePad = Math.max(0, Math.floor((beamWidth - imageWidth) / 2));
+	const image = new Image(
+		imageBase64,
+		GATE_IMAGE_MIME,
+		{ fallbackColor: (s: string) => fg(theme, "muted", s) },
+		{
+			maxWidthCells: imageWidth,
+			maxHeightCells: GATE_IMAGE_MAX_HEIGHT_CELLS,
+			filename: GATE_IMAGE_FILENAME,
+		},
+	);
+
+	const rendered = image.render(beamWidth);
+	if (rendered.length === 1 && rendered[0]?.includes("[Image:")) {
+		return buildAnsiGateImage(beamWidth);
+	}
+	return rendered.map((row) => " ".repeat(imagePad) + row);
 }
 
 // ─── BANNER-GEOMETRIE ────────────────────────────────────────────────────────
@@ -318,12 +569,18 @@ function renderFullHeader(theme: Theme, model: ModelInfo | undefined, width: num
 	const { beamWidth, pad } = geometry(width);
 	const lines: string[] = [];
 
-	// Gate-Emblem: breite Chevron-Krone → rundes Stargate (mit horizontalem
-	// Event-Horizon-Beam) → A-Frame-Standfuß → Reflexions-Echo.
+	// Gate-Emblem: primär die gewünschte Pixelart-Grafik. Terminals ohne
+	// Inline-Bildprotokoll bekommen eine ANSI-Truecolor-Version desselben Bildes;
+	// nur wenn die lokale Bilddatei fehlt, bleibt die alte Blockart als Fallback.
 	lines.push("");
-	lines.push(indented(pad, buildCrown(theme, beamWidth)));
-	for (const row of buildGate(theme, beamWidth)) lines.push(indented(pad, row));
-	lines.push(indented(pad, buildReflection(theme, beamWidth)));
+	const gateImage = buildGateImage(theme, beamWidth);
+	if (gateImage) {
+		for (const row of gateImage) lines.push(indented(pad, row));
+	} else {
+		lines.push(indented(pad, buildCrown(theme, beamWidth)));
+		for (const row of buildGate(theme, beamWidth)) lines.push(indented(pad, row));
+		lines.push(indented(pad, buildReflection(theme, beamWidth)));
+	}
 
 	// Titel.
 	lines.push("");

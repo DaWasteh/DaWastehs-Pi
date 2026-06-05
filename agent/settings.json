@@ -1,13 +1,16 @@
 {
-  "lastChangelogVersion": "0.78.0",
-  "defaultProvider": "google",
-  "defaultModel": "gemini-flash-latest",
+  "lastChangelogVersion": "0.78.1",
+  "defaultProvider": "llama-server",
+  "defaultModel": "Step-3.7-Flash",
   "packages": [
     "npm:pi-llama-cpp",
     "npm:pi-mcp-adapter",
     "npm:pi-web-access",
     "npm:pi-hermes-memory",
-    "npm:@casualjim/pi-heimdall"
+    "npm:@casualjim/pi-heimdall",
+    "npm:@juicesharp/rpiv-todo",
+    "npm:@juicesharp/rpiv-i18n",
+    "npm:@juicesharp/rpiv-ask-user-question"
   ],
   "compaction": {
     "enabled": true,
@@ -20,7 +23,7 @@
     "medium": 32768,
     "high": 65536
   },
-  "defaultThinkingLevel": "off",
+  "defaultThinkingLevel": "high",
   "theme": "stargate-sg1",
   "httpIdleTimeoutMs": 0
 }
