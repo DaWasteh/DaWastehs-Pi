@@ -36,10 +36,14 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { VERSION } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, VERSION } from "@earendil-works/pi-coding-agent";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import { Type } from "typebox";
 
 const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
+const LLAMA_CPP_PACKAGE_NAME = "pi-llama-cpp";
+const LLAMA_SERVER_URL = "http://127.0.0.1:1234";
 
 /** What to update. Maps directly onto `pi update` flags. */
 type UpdateScope = "all" | "self" | "extensions";
@@ -128,6 +132,116 @@ export default function (pi: ExtensionAPI) {
     return scope === "self" ? "pi" : scope === "extensions" ? "packages" : "pi + packages";
   }
 
+  /** Read a JSON object from disk. Missing files are treated as empty objects. */
+  async function readJsonObject(path: string): Promise<Record<string, unknown>> {
+    try {
+      const raw = await readFile(path, "utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? (parsed as Record<string, unknown>)
+        : {};
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "ENOENT") return {};
+      throw err;
+    }
+  }
+
+  /** Keep Pi's global llama.cpp server setting on LM Studio's OpenAI-compatible port. */
+  async function ensureGlobalLlamaServerUrl(): Promise<string> {
+    const settingsPath = join(getAgentDir(), "settings.json");
+    const settings = await readJsonObject(settingsPath);
+
+    if (settings.llamaServerUrl === LLAMA_SERVER_URL) {
+      return `✅ Global llamaServerUrl already set to ${LLAMA_SERVER_URL}.`;
+    }
+
+    settings.llamaServerUrl = LLAMA_SERVER_URL;
+    await mkdir(dirname(settingsPath), { recursive: true });
+    await writeFile(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
+    return `✅ Set global llamaServerUrl to ${LLAMA_SERVER_URL}.`;
+  }
+
+  /** Candidate pi-llama-cpp package roots that may have been refreshed by `pi update`. */
+  function llamaCppPackageRoots(cwd: string): string[] {
+    const roots = [
+      join(getAgentDir(), "npm", "node_modules", LLAMA_CPP_PACKAGE_NAME),
+      join(cwd, ".pi", "npm", "node_modules", LLAMA_CPP_PACKAGE_NAME),
+    ];
+    return [...new Set(roots)];
+  }
+
+  /** Re-apply the local pi-llama-cpp fallback-port patch that package updates overwrite. */
+  async function patchLlamaCppDefaultUrl(packageRoot: string): Promise<{ found: boolean; ok: boolean; message?: string }> {
+    const constantsPath = join(packageRoot, "src", "constants.ts");
+
+    let source: string;
+    try {
+      source = await readFile(constantsPath, "utf8");
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "ENOENT") return { found: false, ok: true };
+      return {
+        found: true,
+        ok: false,
+        message: `⚠️ Could not read ${constantsPath}: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+
+    const targetLine = `export const DEFAULT_LLAMA_SERVER_URL = "${LLAMA_SERVER_URL}";`;
+    const defaultUrlPattern = /export const DEFAULT_LLAMA_SERVER_URL\s*=\s*["']http:\/\/127\.0\.0\.1:\d+["'];/;
+
+    if (!defaultUrlPattern.test(source)) {
+      return {
+        found: true,
+        ok: false,
+        message: `⚠️ Could not find DEFAULT_LLAMA_SERVER_URL in ${constantsPath}.`,
+      };
+    }
+
+    const next = source.replace(defaultUrlPattern, targetLine);
+    if (next === source) {
+      return { found: true, ok: true, message: `✅ ${LLAMA_CPP_PACKAGE_NAME} fallback already uses ${LLAMA_SERVER_URL}.` };
+    }
+
+    try {
+      await writeFile(constantsPath, next, "utf8");
+      return { found: true, ok: true, message: `✅ Patched ${constantsPath} to ${LLAMA_SERVER_URL}.` };
+    } catch (err: unknown) {
+      return {
+        found: true,
+        ok: false,
+        message: `⚠️ Could not write ${constantsPath}: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+  }
+
+  /** Reset llama.cpp/LM Studio integration to port 1234 after package updates. */
+  async function ensureLlamaCppPort1234(cwd: string): Promise<{ ok: boolean; text: string }> {
+    const messages: string[] = [];
+    let ok = true;
+
+    try {
+      messages.push(await ensureGlobalLlamaServerUrl());
+    } catch (err: unknown) {
+      ok = false;
+      messages.push(`⚠️ Could not set global llamaServerUrl: ${err instanceof Error ? err.message : String(err)}`);
+    }
+
+    let foundPackage = false;
+    for (const root of llamaCppPackageRoots(cwd)) {
+      const patch = await patchLlamaCppDefaultUrl(root);
+      if (!patch.found) continue;
+      foundPackage = true;
+      if (!patch.ok) ok = false;
+      if (patch.message) messages.push(patch.message);
+    }
+
+    if (!foundPackage) {
+      messages.push(`ℹ️ ${LLAMA_CPP_PACKAGE_NAME} was not found in global/project npm packages.`);
+    }
+
+    return { ok, text: messages.join("\n") };
+  }
+
   /** Run `pi <args…>` and capture the result. */
   async function runPi(
     piArgs: string[],
@@ -172,9 +286,10 @@ export default function (pi: ExtensionAPI) {
     description:
       "Update pi and/or its installed packages (extensions, skills, prompts, themes) via the pi CLI. " +
       "`scope` selects what to update: 'all' (default) updates pi and packages, 'self' only pi, " +
-      "'extensions' only packages. `check=true` reports whether a pi update is available without " +
-      "installing (package update availability is surfaced by pi at startup; there is no dry-run for it). " +
-      "`confirm=false` skips the confirmation dialog. `force` reinstalls pi even if current (scope 'self' only).",
+      "'extensions' only packages. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234. " +
+      "`check=true` reports whether a pi update is available without installing (package update availability is " +
+      "surfaced by pi at startup; there is no dry-run for it). `confirm=false` skips the confirmation dialog. " +
+      "`force` reinstalls pi even if current (scope 'self' only).",
     parameters: Type.Object({
       scope: Type.Optional(
         Type.Union([Type.Literal("all"), Type.Literal("self"), Type.Literal("extensions")], {
@@ -234,6 +349,7 @@ export default function (pi: ExtensionAPI) {
           "Pi Update",
           `Update ${scopeLabel(scope)}?\n\nThis runs: ${["pi", ...args].join(" ")}` +
             `${scope !== "self" ? "\n\nPi will update outdated packages and reconcile pinned git refs." : ""}` +
+            `${scope !== "self" ? `\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}.` : ""}` +
             piHint,
         );
         if (!confirmed) {
@@ -244,9 +360,14 @@ export default function (pi: ExtensionAPI) {
       // ── Run ──────────────────────────────────────────────────────────────
       ctx.ui.setStatus("pi-update", `Updating ${scopeLabel(scope)}…`);
       const result = await runPi(args);
-      ctx.ui.setStatus("pi-update", result.success ? "Update complete!" : "Update failed!");
+      const llamaPort = result.success && scope !== "self" ? await ensureLlamaCppPort1234(ctx.cwd) : null;
+      ctx.ui.setStatus(
+        "pi-update",
+        result.success ? (llamaPort && !llamaPort.ok ? "Update complete; llama port reset failed!" : "Update complete!") : "Update failed!",
+      );
 
       const body = result.output || "(no output)";
+      const llamaPortText = llamaPort ? `\n\nPost-update ${LLAMA_CPP_PACKAGE_NAME} port reset:\n${llamaPort.text}` : "";
 
       if (!result.success) {
         // Per the current extension API, only a thrown error is flagged as an
@@ -258,7 +379,7 @@ export default function (pi: ExtensionAPI) {
       return {
         content: [{
           type: "text",
-          text: `✅ Update finished (\`${["pi", ...args].join(" ")}\`):\n\n${body}\n\nRestart pi to load any new versions.`,
+          text: `✅ Update finished (\`${["pi", ...args].join(" ")}\`):\n\n${body}${llamaPortText}\n\nRestart pi to load any new versions.`,
         }],
         details: {},
       };
@@ -296,7 +417,8 @@ export default function (pi: ExtensionAPI) {
 
       const confirmed = await ctx.ui.confirm(
         "Pi Update",
-        `Update ${scopeLabel(scope)} now?\n\nRuns: ${["pi", ...args].join(" ")}`,
+        `Update ${scopeLabel(scope)} now?\n\nRuns: ${["pi", ...args].join(" ")}` +
+          `${scope !== "self" ? `\n\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}.` : ""}`,
       );
       if (!confirmed) {
         ctx.ui.notify("Update cancelled.", "info");
@@ -305,10 +427,15 @@ export default function (pi: ExtensionAPI) {
 
       ctx.ui.setStatus("pi-update", `Updating ${scopeLabel(scope)}…`);
       const result = await runPi(args);
-      ctx.ui.setStatus("pi-update", result.success ? "Done!" : "Failed!");
+      const llamaPort = result.success && scope !== "self" ? await ensureLlamaCppPort1234(ctx.cwd) : null;
+      ctx.ui.setStatus(
+        "pi-update",
+        result.success ? (llamaPort && !llamaPort.ok ? "Done; llama port reset failed!" : "Done!") : "Failed!",
+      );
 
       if (result.success) {
-        ctx.ui.notify(`✅ Update finished. Restart pi to load new versions.`, "info");
+        const llamaPortText = llamaPort ? `\n\n${llamaPort.text}` : "";
+        ctx.ui.notify(`✅ Update finished.${llamaPortText}\n\nRestart pi to load new versions.`, llamaPort && !llamaPort.ok ? "warning" : "info");
       } else {
         ctx.ui.notify(`❌ Update failed:\n${result.output.slice(0, 1200)}`, "error");
       }
