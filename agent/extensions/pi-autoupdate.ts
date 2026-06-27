@@ -45,6 +45,9 @@ import { Type } from "typebox";
 const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
 const LLAMA_CPP_PACKAGE_NAME = "pi-llama-cpp";
 const LLAMA_SERVER_URL = "http://127.0.0.1:1234";
+const HERMES_MEMORY_PACKAGE_NAME = "pi-hermes-memory";
+const PIX_OPTIMIZER_PACKAGE_PATH = ["@xynogen", "pix-optimizer"];
+const PIX_PRETTY_PACKAGE_PATH = ["@xynogen", "pix-pretty"];
 
 /** What to update. Maps directly onto `pi update` flags. */
 type UpdateScope = "all" | "self" | "extensions";
@@ -244,6 +247,322 @@ export default function (pi: ExtensionAPI) {
     return { ok, text: messages.join("\n") };
   }
 
+  function piNpmRoots(cwd: string): string[] {
+    const roots = [
+      join(getAgentDir(), "npm"),
+      join(cwd, ".pi", "npm"),
+    ];
+    return [...new Set(roots)];
+  }
+
+  function pixOptimizerPackageRoots(cwd: string): string[] {
+    return piNpmRoots(cwd).map((root) => join(root, "node_modules", ...PIX_OPTIMIZER_PACKAGE_PATH));
+  }
+
+  function pixPrettyPackageRoot(npmRoot: string): string {
+    return join(npmRoot, "node_modules", ...PIX_PRETTY_PACKAGE_PATH);
+  }
+
+  async function fileExists(path: string): Promise<boolean> {
+    try {
+      await readFile(path);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function buildNpmCommand(npmArgs: string[]): { command: string; args: string[] } {
+    if (process.platform === "win32") {
+      const comspec = process.env.ComSpec || "cmd.exe";
+      return { command: comspec, args: ["/d", "/s", "/c", "npm", ...npmArgs] };
+    }
+    return { command: "npm", args: npmArgs };
+  }
+
+  async function runNpm(
+    npmRoot: string,
+    npmArgs: string[],
+    timeoutMs = 180_000,
+  ): Promise<{ success: boolean; output: string }> {
+    const { command, args } = buildNpmCommand(npmArgs);
+    try {
+      const result = await pi.exec(command, args, { cwd: npmRoot, timeout: timeoutMs });
+      const stdout = (result as any).stdout ?? "";
+      const stderr = (result as any).stderr ?? "";
+      const exitCode = (result as any).code ?? 0;
+      const output = (stdout + "\n" + stderr).trim();
+      return { success: exitCode === 0, output: String(output).slice(0, 4000) };
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      return { success: false, output: `Could not launch npm in ${npmRoot}: ${msg}` };
+    }
+  }
+
+  async function pixPrettyIconCatalogStatus(packageRoot: string): Promise<{
+    found: boolean;
+    ok: boolean;
+    version?: string;
+    message?: string;
+  }> {
+    const packageJsonPath = join(packageRoot, "package.json");
+
+    let pkg: Record<string, unknown>;
+    try {
+      const raw = await readFile(packageJsonPath, "utf8");
+      const parsed = JSON.parse(raw) as unknown;
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return { found: true, ok: false, message: `Invalid package.json at ${packageJsonPath}.` };
+      }
+      pkg = parsed as Record<string, unknown>;
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "ENOENT") return { found: false, ok: false };
+      return {
+        found: true,
+        ok: false,
+        message: `Could not read ${packageJsonPath}: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+
+    const version = typeof pkg.version === "string" ? pkg.version : "unknown";
+    const exportsValue = pkg.exports;
+    const hasIconCatalogExport =
+      !!exportsValue &&
+      typeof exportsValue === "object" &&
+      !Array.isArray(exportsValue) &&
+      Object.prototype.hasOwnProperty.call(exportsValue, "./icon-catalog");
+    const hasIconCatalogFile = await fileExists(join(packageRoot, "src", "icon-catalog.ts"));
+
+    return {
+      found: true,
+      ok: hasIconCatalogExport && hasIconCatalogFile,
+      version,
+      message: !hasIconCatalogExport
+        ? `@xynogen/pix-pretty ${version} does not export ./icon-catalog.`
+        : !hasIconCatalogFile
+          ? `@xynogen/pix-pretty ${version} exports ./icon-catalog, but src/icon-catalog.ts is missing.`
+          : undefined,
+    };
+  }
+
+  async function ensurePixPrettyIconCatalog(cwd: string): Promise<{ ok: boolean; text: string }> {
+    const messages: string[] = [];
+    let ok = true;
+    let foundRelevantRoot = false;
+
+    for (const npmRoot of piNpmRoots(cwd)) {
+      if (!(await fileExists(join(npmRoot, "package.json")))) continue;
+
+      const optimizerRoot = join(npmRoot, "node_modules", ...PIX_OPTIMIZER_PACKAGE_PATH);
+      const prettyRoot = pixPrettyPackageRoot(npmRoot);
+      const hasOptimizer = await fileExists(join(optimizerRoot, "package.json"));
+      const before = await pixPrettyIconCatalogStatus(prettyRoot);
+
+      if (!hasOptimizer && !before.found) continue;
+      foundRelevantRoot = true;
+
+      if (before.ok) {
+        messages.push(`✅ @xynogen/pix-pretty ${before.version} already exposes ./icon-catalog in ${npmRoot}.`);
+        continue;
+      }
+
+      const reason = before.message ?? "@xynogen/pix-pretty is not installed.";
+      const update = await runNpm(npmRoot, ["update", "@xynogen/pix-pretty", "--omit=dev"]);
+      if (!update.success) {
+        ok = false;
+        messages.push(`⚠️ ${reason}\nCould not refresh @xynogen/pix-pretty in ${npmRoot}:\n${update.output}`);
+        continue;
+      }
+
+      const after = await pixPrettyIconCatalogStatus(prettyRoot);
+      if (after.ok) {
+        messages.push(`✅ Refreshed @xynogen/pix-pretty to ${after.version} in ${npmRoot}; ./icon-catalog is available.`);
+      } else {
+        ok = false;
+        messages.push(
+          `⚠️ npm update ran in ${npmRoot}, but pix-optimizer compatibility is still broken: ${after.message ?? "@xynogen/pix-pretty is not installed."}`,
+        );
+      }
+    }
+
+    if (!foundRelevantRoot) messages.push("ℹ️ @xynogen/pix-pretty/@xynogen/pix-optimizer were not found in global/project npm packages.");
+    return { ok, text: messages.join("\n") };
+  }
+
+  async function patchPixOptimizerRtk(packageRoot: string): Promise<{ found: boolean; ok: boolean; message?: string }> {
+    const rtkPath = join(packageRoot, "src", "rtk.ts");
+    const readmePath = join(packageRoot, "README.md");
+
+    let source: string;
+    try {
+      source = await readFile(rtkPath, "utf8");
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "ENOENT") return { found: false, ok: true };
+      return { found: true, ok: false, message: `⚠️ Could not read ${rtkPath}: ${err instanceof Error ? err.message : String(err)}` };
+    }
+
+    const oldCheck = `	// Check if rtk binary is available
+	const checkRtkAvailability = async (): Promise<RtkStatus> => {
+		// Cache for 60 seconds
+		if (rtkStatus && Date.now() - rtkStatus.checkedAt < 60000) {
+			return rtkStatus;
+		}
+
+		try {
+			const result = await pi.exec("which", ["rtk"], { timeout: 1000 });
+			if (result.code === 0 && result.stdout?.trim()) {
+				rtkStatus = {
+					available: true,
+					checkedAt: Date.now(),
+					path: result.stdout.trim(),
+				};
+				warnedMissing = false;
+				return rtkStatus;
+			}
+		} catch (_error) {
+			// which command failed
+		}
+
+		rtkStatus = {
+			available: false,
+			checkedAt: Date.now(),
+		};
+		return rtkStatus;
+	};`;
+    const newCheck = `	// Check if rtk binary is available
+	const checkRtkAvailability = async (): Promise<RtkStatus> => {
+		// Cache for 60 seconds
+		if (rtkStatus && Date.now() - rtkStatus.checkedAt < 60000) {
+			return rtkStatus;
+		}
+
+		const markAvailable = (path = "rtk"): RtkStatus => {
+			rtkStatus = {
+				available: true,
+				checkedAt: Date.now(),
+				path,
+			};
+			warnedMissing = false;
+			return rtkStatus;
+		};
+
+		try {
+			const result = await pi.exec("rtk", ["--version"], { timeout: 1000 });
+			if (result.code === 0) return markAvailable();
+		} catch (_error) {
+			// direct probe failed; fall back to PATH locator
+		}
+
+		try {
+			const locator = process.platform === "win32" ? "where.exe" : "which";
+			const result = await pi.exec(locator, ["rtk"], { timeout: 1000 });
+			const path = result.stdout?.trim().split(/\\r?\\n/)[0];
+			if (result.code === 0 && path) return markAvailable(path);
+		} catch (_error) {
+			// locator command failed
+		}
+
+		rtkStatus = {
+			available: false,
+			checkedAt: Date.now(),
+		};
+		return rtkStatus;
+	};`;
+
+    let next = source.includes(oldCheck) ? source.replace(oldCheck, newCheck) : source;
+    next = next.replace(
+      "rtk not found — RTK rewriting disabled. Install: cargo install rtk-ai",
+      "rtk not found — RTK rewriting disabled. Install: cargo install --git https://github.com/rtk-ai/rtk",
+    );
+
+    if (!next.includes('pi.exec("rtk", ["--version"]') || !next.includes("cargo install --git https://github.com/rtk-ai/rtk")) {
+      return { found: true, ok: false, message: `⚠️ Could not apply RTK availability patch in ${rtkPath}.` };
+    }
+
+    if (next !== source) await writeFile(rtkPath, next, "utf8");
+
+    try {
+      const readme = await readFile(readmePath, "utf8");
+      const patchedReadme = readme.replace("cargo install rtk-ai", "cargo install --git https://github.com/rtk-ai/rtk");
+      if (patchedReadme !== readme) await writeFile(readmePath, patchedReadme, "utf8");
+    } catch {
+      // README is documentation only; source patch above is the functional fix.
+    }
+
+    return { found: true, ok: true, message: `✅ Patched ${rtkPath} RTK probe + install hint.` };
+  }
+
+  async function ensurePixOptimizerRtkPatch(cwd: string): Promise<{ ok: boolean; text: string }> {
+    const messages: string[] = [];
+    let ok = true;
+    let foundPackage = false;
+
+    for (const root of pixOptimizerPackageRoots(cwd)) {
+      const patch = await patchPixOptimizerRtk(root);
+      if (!patch.found) continue;
+      foundPackage = true;
+      if (!patch.ok) ok = false;
+      if (patch.message) messages.push(patch.message);
+    }
+
+    if (!foundPackage) messages.push("ℹ️ @xynogen/pix-optimizer was not found in global/project npm packages.");
+    return { ok, text: messages.join("\n") };
+  }
+
+  function hermesMemoryPackageRoots(cwd: string): string[] {
+    const roots = [
+      join(getAgentDir(), "npm", "node_modules", HERMES_MEMORY_PACKAGE_NAME),
+      join(cwd, ".pi", "npm", "node_modules", HERMES_MEMORY_PACKAGE_NAME),
+    ];
+    return [...new Set(roots)];
+  }
+
+  async function patchHermesBackfillWarning(packageRoot: string): Promise<{ found: boolean; ok: boolean; message?: string }> {
+    const filePath = join(packageRoot, "src", "handlers", "session-backfill.ts");
+    let source: string;
+    try {
+      source = await readFile(filePath, "utf8");
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "ENOENT") return { found: false, ok: true };
+      return { found: true, ok: false, message: `⚠️ Could not read ${filePath}: ${err instanceof Error ? err.message : String(err)}` };
+    }
+
+    const noisy = "notifyBestEffort(options.notify, formatBackfillResult(result), result.errors.length > 0 || result.reachedLimit ? 'warning' : 'info');";
+    const quiet = "notifyBestEffort(options.notify, formatBackfillResult(result), result.errors.length > 0 ? 'warning' : 'info');";
+    const next = source.replace(noisy, quiet);
+    if (!next.includes(quiet)) return { found: true, ok: false, message: `⚠️ Could not apply backfill warning patch in ${filePath}.` };
+    if (next !== source) await writeFile(filePath, next, "utf8");
+    return { found: true, ok: true, message: `✅ Patched ${filePath} startup-limit notification to info.` };
+  }
+
+  async function ensureHermesBackfillPatch(cwd: string): Promise<{ ok: boolean; text: string }> {
+    const messages: string[] = [];
+    let ok = true;
+    let foundPackage = false;
+
+    for (const root of hermesMemoryPackageRoots(cwd)) {
+      const patch = await patchHermesBackfillWarning(root);
+      if (!patch.found) continue;
+      foundPackage = true;
+      if (!patch.ok) ok = false;
+      if (patch.message) messages.push(patch.message);
+    }
+
+    if (!foundPackage) messages.push(`ℹ️ ${HERMES_MEMORY_PACKAGE_NAME} was not found in global/project npm packages.`);
+    return { ok, text: messages.join("\n") };
+  }
+
+  async function ensurePostUpdatePackagePatches(cwd: string): Promise<{ ok: boolean; text: string }> {
+    const llama = await ensureLlamaCppPort1234(cwd);
+    const pixPretty = await ensurePixPrettyIconCatalog(cwd);
+    const pix = await ensurePixOptimizerRtkPatch(cwd);
+    const hermes = await ensureHermesBackfillPatch(cwd);
+    return {
+      ok: llama.ok && pixPretty.ok && pix.ok && hermes.ok,
+      text: `${LLAMA_CPP_PACKAGE_NAME}:\n${llama.text}\n\n@xynogen/pix-pretty:\n${pixPretty.text}\n\n@xynogen/pix-optimizer:\n${pix.text}\n\n${HERMES_MEMORY_PACKAGE_NAME}:\n${hermes.text}`,
+    };
+  }
+
   /** Run `pi <args…>` and capture the result. */
   async function runPi(
     piArgs: string[],
@@ -288,7 +607,7 @@ export default function (pi: ExtensionAPI) {
     description:
       "Update pi and/or its installed packages (extensions, skills, prompts, themes) via the pi CLI. " +
       "`scope` selects what to update: 'all' (default) updates pi and packages, 'self' only pi, " +
-      "'extensions' only packages. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234. " +
+      "'extensions' only packages. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234, @xynogen/pix-pretty is refreshed if pix-optimizer needs its icon catalog, and known overwritten local package patches are re-applied. " +
       "`check=true` reports whether a pi update is available without installing (package update availability is " +
       "surfaced by pi at startup; there is no dry-run for it). `confirm=false` skips the confirmation dialog. " +
       "`force` reinstalls pi even if current (scope 'self' only).",
@@ -351,7 +670,7 @@ export default function (pi: ExtensionAPI) {
           "Pi Update",
           `Update ${scopeLabel(scope)}?\n\nThis runs: ${["pi", ...args].join(" ")}` +
             `${scope !== "self" ? "\n\nPi will update outdated packages and reconcile pinned git refs." : ""}` +
-            `${scope !== "self" ? `\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}.` : ""}` +
+            `${scope !== "self" ? `\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}, pix-pretty/pix-optimizer compatibility will be checked, and known local patches re-applied.` : ""}` +
             piHint,
         );
         if (!confirmed) {
@@ -362,26 +681,26 @@ export default function (pi: ExtensionAPI) {
       // ── Run ──────────────────────────────────────────────────────────────
       ctx.ui.setStatus("pi-update", `Updating ${scopeLabel(scope)}…`);
       const result = await runPi(args);
-      const llamaPort = result.success && scope !== "self" ? await ensureLlamaCppPort1234(ctx.cwd) : null;
+      const postUpdate = scope !== "self" ? await ensurePostUpdatePackagePatches(ctx.cwd) : null;
       ctx.ui.setStatus(
         "pi-update",
-        result.success ? (llamaPort && !llamaPort.ok ? "Update complete; llama port reset failed!" : "Update complete!") : "Update failed!",
+        result.success ? (postUpdate && !postUpdate.ok ? "Update complete; post-update patch failed!" : "Update complete!") : "Update failed!",
       );
 
       const body = result.output || "(no output)";
-      const llamaPortText = llamaPort ? `\n\nPost-update ${LLAMA_CPP_PACKAGE_NAME} port reset:\n${llamaPort.text}` : "";
+      const postUpdateText = postUpdate ? `\n\nPost-update package fixes:\n${postUpdate.text}` : "";
 
       if (!result.success) {
         // Per the current extension API, only a thrown error is flagged as an
         // error to the model; a returned `isError` is not. Throw so failures are
         // reported correctly, while still surfacing pi's full output.
-        throw new Error(`Pi update failed (\`${["pi", ...args].join(" ")}\`):\n\n${body.slice(0, 3000)}`);
+        throw new Error(`Pi update failed (\`${["pi", ...args].join(" ")}\`):\n\n${(body + postUpdateText).slice(0, 3000)}`);
       }
 
       return {
         content: [{
           type: "text",
-          text: `✅ Update finished (\`${["pi", ...args].join(" ")}\`):\n\n${body}${llamaPortText}\n\nRestart pi to load any new versions.`,
+          text: `✅ Update finished (\`${["pi", ...args].join(" ")}\`):\n\n${body}${postUpdateText}\n\nRestart pi to load any new versions.`,
         }],
         details: {},
       };
@@ -420,7 +739,7 @@ export default function (pi: ExtensionAPI) {
       const confirmed = await ctx.ui.confirm(
         "Pi Update",
         `Update ${scopeLabel(scope)} now?\n\nRuns: ${["pi", ...args].join(" ")}` +
-          `${scope !== "self" ? `\n\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}.` : ""}`,
+          `${scope !== "self" ? `\n\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}, pix-pretty/pix-optimizer compatibility will be checked, and known local patches re-applied.` : ""}`,
       );
       if (!confirmed) {
         ctx.ui.notify("Update cancelled.", "info");
@@ -429,17 +748,17 @@ export default function (pi: ExtensionAPI) {
 
       ctx.ui.setStatus("pi-update", `Updating ${scopeLabel(scope)}…`);
       const result = await runPi(args);
-      const llamaPort = result.success && scope !== "self" ? await ensureLlamaCppPort1234(ctx.cwd) : null;
+      const postUpdate = scope !== "self" ? await ensurePostUpdatePackagePatches(ctx.cwd) : null;
       ctx.ui.setStatus(
         "pi-update",
-        result.success ? (llamaPort && !llamaPort.ok ? "Done; llama port reset failed!" : "Done!") : "Failed!",
+        result.success ? (postUpdate && !postUpdate.ok ? "Done; post-update patch failed!" : "Done!") : "Failed!",
       );
 
+      const postUpdateText = postUpdate ? `\n\n${postUpdate.text}` : "";
       if (result.success) {
-        const llamaPortText = llamaPort ? `\n\n${llamaPort.text}` : "";
-        ctx.ui.notify(`✅ Update finished.${llamaPortText}\n\nRestart pi to load new versions.`, llamaPort && !llamaPort.ok ? "warning" : "info");
+        ctx.ui.notify(`✅ Update finished.${postUpdateText}\n\nRestart pi to load new versions.`, postUpdate && !postUpdate.ok ? "warning" : "info");
       } else {
-        ctx.ui.notify(`❌ Update failed:\n${result.output.slice(0, 1200)}`, "error");
+        ctx.ui.notify(`❌ Update failed:\n${(result.output + postUpdateText).slice(0, 1200)}`, "error");
       }
     },
   });
