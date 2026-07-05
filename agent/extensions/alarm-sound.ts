@@ -6,8 +6,11 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 const ALARM_PATH = join(homedir(), ".pi", "agent", "extensions", "audio", "alarm.mp3");
 
 let alarmProcess: ReturnType<typeof exec> | null = null;
+let alarmEnabled = true;
 
 function playAlarm(): void {
+  if (!alarmEnabled) return;
+
   if (alarmProcess) {
     // Falls noch ein alter Sound läuft, zuerst killen
     try {
@@ -54,5 +57,26 @@ export default function (pi: ExtensionAPI) {
     if (ctx.mode === "tui" || ctx.mode === "rpc") {
       playAlarm();
     }
+  });
+
+  pi.registerCommand("alarm-sounds", {
+    description: "Alarm-Sound aktivieren/deaktivieren (on/off)",
+    handler: async (args, ctx) => {
+      const arg = args.trim().toLowerCase();
+
+      if (arg === "on") {
+        alarmEnabled = true;
+        ctx.ui.notify("Alarm-Sound aktiviert", "info");
+      } else if (arg === "off") {
+        alarmEnabled = false;
+        stopAlarm();
+        ctx.ui.notify("Alarm-Sound deaktiviert", "info");
+      } else {
+        ctx.ui.notify(
+          `Nutzung: /alarm-sounds on|off (aktuell: ${alarmEnabled ? "on" : "off"})`,
+          "warn"
+        );
+      }
+    },
   });
 }
