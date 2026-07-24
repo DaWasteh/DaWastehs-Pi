@@ -4,16 +4,17 @@
   "dependencies": {
     "@casualjim/pi-heimdall": "^0.2.10",
     "@gaodes/pi-graphify": "^0.2.2",
-    "@juicesharp/rpiv-ask-user-question": "^1.20.0",
-    "@juicesharp/rpiv-i18n": "^1.20.0",
-    "@juicesharp/rpiv-todo": "^1.20.0",
-    "@xynogen/pix-optimizer": "^1.1.16",
-    "pi-hermes-memory": "^0.7.23",
+    "@juicesharp/rpiv-ask-user-question": "^2.1.0",
+    "@juicesharp/rpiv-i18n": "^2.1.0",
+    "@juicesharp/rpiv-todo": "^2.1.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@xynogen/pix-optimizer": "^1.1.18",
+    "pi-hermes-memory": "^0.8.2",
     "pi-intercom": "^0.6.0",
-    "pi-llama-cpp": "^0.8.1",
-    "pi-mcp-adapter": "^2.11.0",
+    "pi-llama-cpp": "^0.9.1",
+    "pi-mcp-adapter": "^2.12.0",
     "pi-prompt-template-model": "^0.10.0",
-    "pi-subagents": "^0.34.0",
+    "pi-subagents": "^0.35.1",
     "pi-web-access": "^0.13.0"
   }
 }

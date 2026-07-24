@@ -37,7 +37,8 @@ Use `--write` only after inspecting the dry run; it creates a backup by default.
 - WPF must not treat `src/.../bin/...` as repo root just because copied assets exist there; prefer candidates with `.git`/`SuperCalcBenchmark.slnx`.
 - GUI archives should land under repo-root `./archive`, not under bin output directories.
 - Headless Pi sessions may not run Wine GUI even when the publish is valid.
-
+- Token metrics must remain exact, never character estimates: request streaming `usage` with `stream_options.include_usage`, parse the final empty-choices SSE chunk, use `usage.completion_tokens` as authoritative generated total, and count visible Thinking/Output separately with the loaded model's `/tokenize` endpoint (`add_special=false`). Total may exceed the visible channel sum because control/separator/EOS tokens are hidden.
+- New archive token fields stay nullable so legacy scorecards render `n/a`; never backfill old records from chars.
 ## Verification
 - `dotnet --info` sees a compatible .NET 10 SDK; Ubuntu `~/.pi/dotnet/dotnet --info` is acceptable with the script env.
 - Build has 0 errors; Ubuntu `./setup_linux.sh` publishes the Wine app.

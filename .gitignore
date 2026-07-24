@@ -19,6 +19,7 @@ bin/
 # Do not track them: Windows/Linux/macOS would otherwise keep flipping them.
 agent/heimdall.json
 agent/run-history.jsonl
+agent/.pi-hermes-locks.sqlite
 agent/intercom/
 .pi-subagents/
 sessions/
