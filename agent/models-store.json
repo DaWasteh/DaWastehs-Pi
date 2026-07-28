@@ -22,6 +22,9 @@
         "thinkingLevelMap": {
           "xhigh": "xhigh",
           "minimal": "low"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -57,6 +60,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -84,6 +88,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -120,6 +125,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -157,6 +163,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -194,6 +201,7 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       },
@@ -231,18 +239,20 @@
           "minimal": "low"
         },
         "compat": {
+          "supportsOpenAIGrammarTools": true,
           "supportsToolSearch": true
         }
       }
     ],
-    "checkedAt": 1784905906875,
-    "lastModified": 1784811032000
+    "checkedAt": 1785242655254,
+    "lastModified": 1784920533000,
+    "etag": "W/\"8c50b40966720784303e46378a0807dc\""
   },
   "google": {
     "models": [
       {
         "id": "deep-research-max-preview-04-2026",
-        "name": "Deep Research Max Preview",
+        "name": "Deep Research Max Preview (Apr-21-2026)",
         "api": "google-generative-ai",
         "provider": "google",
         "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
@@ -257,12 +267,12 @@
           "cacheRead": 0.2,
           "cacheWrite": 0
         },
-        "contextWindow": 1048576,
+        "contextWindow": 131072,
         "maxTokens": 65536
       },
       {
         "id": "deep-research-preview-04-2026",
-        "name": "Gemini Deep Research Preview",
+        "name": "Deep Research Preview (Apr-21-2026)",
         "api": "google-generative-ai",
         "provider": "google",
         "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
@@ -277,7 +287,7 @@
           "cacheRead": 0.2,
           "cacheWrite": 0
         },
-        "contextWindow": 1048576,
+        "contextWindow": 131072,
         "maxTokens": 65536
       },
       {
@@ -322,7 +332,7 @@
       },
       {
         "id": "gemini-2.5-computer-use-preview-10-2025",
-        "name": "Gemini 2.5 Computer Use Preview",
+        "name": "Gemini 2.5 Computer Use Preview 10-2025",
         "api": "google-generative-ai",
         "provider": "google",
         "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
@@ -337,8 +347,8 @@
           "cacheRead": 0,
           "cacheWrite": 0
         },
-        "contextWindow": 128000,
-        "maxTokens": 64000
+        "contextWindow": 131072,
+        "maxTokens": 65536
       },
       {
         "id": "gemini-2.5-flash",
@@ -491,7 +501,7 @@
           "cacheWrite": 0
         },
         "contextWindow": 65536,
-        "maxTokens": 4096,
+        "maxTokens": 65536,
         "thinkingLevelMap": {
           "off": null
         }
@@ -786,8 +796,9 @@
         }
       }
     ],
-    "checkedAt": 1784911253562,
-    "lastModified": 1784897337000
+    "checkedAt": 1785242655261,
+    "lastModified": 1784920517000,
+    "etag": "W/\"847689823a6d36ca4c630f82d83a7db1\""
   },
   "zai": {
     "models": [
@@ -955,8 +966,9 @@
         "maxTokens": 131072
       }
     ],
-    "checkedAt": 1784905914119,
-    "lastModified": 1784811046000
+    "checkedAt": 1785242655262,
+    "lastModified": 1784920551000,
+    "etag": "W/\"614b0b6f5eecf8600ac1beb6740cb32b\""
   },
   "github-copilot": {
     "models": [
@@ -1121,6 +1133,41 @@
       {
         "id": "claude-opus-4.8",
         "name": "Claude Opus 4.8",
+        "api": "anthropic-messages",
+        "provider": "github-copilot",
+        "baseUrl": "https://api.individual.githubcopilot.com",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 5,
+          "output": 25,
+          "cacheRead": 0.5,
+          "cacheWrite": 6.25
+        },
+        "contextWindow": 1000000,
+        "maxTokens": 64000,
+        "headers": {
+          "User-Agent": "GitHubCopilotChat/0.35.0",
+          "Editor-Version": "vscode/1.107.0",
+          "Editor-Plugin-Version": "copilot-chat/0.35.0",
+          "Copilot-Integration-Id": "vscode-chat"
+        },
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "max": "max",
+          "minimal": "low"
+        },
+        "compat": {
+          "forceAdaptiveThinking": true,
+          "supportsTemperature": false
+        }
+      },
+      {
+        "id": "claude-opus-5",
+        "name": "Claude Opus 5",
         "api": "anthropic-messages",
         "provider": "github-copilot",
         "baseUrl": "https://api.individual.githubcopilot.com",
@@ -1474,6 +1521,9 @@
           "high": "high",
           "xhigh": null,
           "max": null
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1505,6 +1555,9 @@
           "off": null,
           "minimal": "low",
           "xhigh": "xhigh"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1536,6 +1589,9 @@
           "off": null,
           "minimal": "low",
           "xhigh": "xhigh"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1571,6 +1627,9 @@
           "high": "high",
           "xhigh": "xhigh",
           "max": null
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1615,6 +1674,9 @@
           "high": "high",
           "xhigh": "xhigh",
           "max": null
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1650,6 +1712,9 @@
           "high": "high",
           "xhigh": "xhigh",
           "max": null
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1681,6 +1746,9 @@
           "off": null,
           "minimal": "low",
           "xhigh": "xhigh"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1725,6 +1793,9 @@
           "high": "high",
           "xhigh": "xhigh",
           "max": null
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1769,6 +1840,9 @@
           "high": "high",
           "xhigh": "xhigh",
           "max": "max"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1813,6 +1887,9 @@
           "high": "high",
           "xhigh": "xhigh",
           "max": "max"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1857,6 +1934,9 @@
           "high": "high",
           "xhigh": "xhigh",
           "max": "max"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true
         }
       },
       {
@@ -1925,7 +2005,8 @@
         }
       }
     ],
-    "checkedAt": 1784905916180,
-    "lastModified": 1784811018000
+    "checkedAt": 1785244541277,
+    "lastModified": 1785146167000,
+    "etag": "W/\"eed6f96ab3f57ecb50da2b0d0712485c\""
   }
 }

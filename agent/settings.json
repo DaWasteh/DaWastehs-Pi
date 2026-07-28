@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.82.0",
-  "defaultProvider": "llama-server=http://127.0.0.1:1234",
-  "defaultModel": "Qwen3.6-27B-MTP",
+  "lastChangelogVersion": "0.82.1",
+  "defaultProvider": "openai-codex",
+  "defaultModel": "gpt-5.6-sol",
   "llamaServerUrl": "http://127.0.0.1:1234",
   "packages": [
     "npm:pi-llama-cpp",
@@ -33,60 +33,67 @@
   "theme": "stargate-sg1",
   "httpIdleTimeoutMs": 0,
   "subagents": {
-    "defaultModel": "zai/glm-5.2",
+    "defaultModel": "openai-codex/gpt-5.6-luna",
     "agentOverrides": {
+      "advisor": {
+        "model": "openai-codex/gpt-5.6-sol",
+        "thinking": "high",
+        "fallbackModels": [
+          "llama-server=http://127.0.0.1:1234/local"
+        ]
+      },
       "oracle": {
-        "model": "zai/glm-5.2",
+        "model": "openai-codex/gpt-5.6-sol",
         "thinking": "high",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "planner": {
-        "model": "zai/glm-5.2",
+        "model": "openai-codex/gpt-5.6-sol",
         "thinking": "high",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "worker": {
-        "model": "openai-codex/gpt-5.6-sol",
+        "model": "openai-codex/gpt-5.6-terra",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "scout": {
-        "model": "zai/glm-5.2",
-        "thinking": "high",
+        "model": "openai-codex/gpt-5.6-luna",
+        "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "reviewer": {
-        "model": "zai/glm-5.2",
+        "model": "openai-codex/gpt-5.6-sol",
         "thinking": "high",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "researcher": {
-        "model": "openai-codex/gpt-5.6-sol",
+        "model": "openai-codex/gpt-5.6-terra",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "context-builder": {
-        "model": "zai/glm-5.2",
-        "thinking": "high",
+        "model": "openai-codex/gpt-5.6-luna",
+        "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "delegate": {
-        "model": "zai/glm-5.2",
-        "thinking": "high",
+        "model": "openai-codex/gpt-5.6-luna",
+        "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
@@ -99,14 +106,14 @@
         ]
       },
       "bugtester": {
-        "model": "openai-codex/gpt-5.6-sol",
+        "model": "openai-codex/gpt-5.6-terra",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "web-searcher": {
-        "model": "openai-codex/gpt-5.6-sol",
+        "model": "openai-codex/gpt-5.6-luna",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"

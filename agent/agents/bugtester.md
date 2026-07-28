@@ -2,7 +2,7 @@
 name: bugtester
 description: Führt gezielte Bug-Reproduktionen und Tests aus und berichtet evidenzbasierte Fehlerursachen.
 tools: read, grep, find, ls, bash
-model: openai-codex/gpt-5.6-sol
+model: openai-codex/gpt-5.6-terra
 fallbackModels: llama-server=http://127.0.0.1:1234/local
 thinking: low
 systemPromptMode: replace

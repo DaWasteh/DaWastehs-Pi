@@ -2,7 +2,7 @@
 name: web-searcher
 description: Sucht aktuelle Primärquellen im Web und liefert eine knappe, zitierfähige Evidenzübersicht.
 tools: web_search, fetch_content, get_search_content, read, grep, find, ls, bash
-model: openai-codex/gpt-5.6-sol
+model: openai-codex/gpt-5.6-luna
 fallbackModels: llama-server=http://127.0.0.1:1234/local
 thinking: low
 systemPromptMode: replace
