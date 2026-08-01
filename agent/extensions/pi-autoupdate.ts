@@ -38,6 +38,7 @@
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { getAgentDir, VERSION } from "@earendil-works/pi-coding-agent";
+import { StringEnum } from "@earendil-works/pi-ai";
 import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { closeSync, openSync, readFileSync, writeSync } from "node:fs";
@@ -80,26 +81,32 @@ export default async function (pi: ExtensionAPI) {
     return 0;
   }
 
+  function withTimeout(signal: AbortSignal | undefined, timeoutMs: number): AbortSignal {
+    const timeout = AbortSignal.timeout(timeoutMs);
+    return signal ? AbortSignal.any([signal, timeout]) : timeout;
+  }
+
   /** Fetch the latest published pi version from pi.dev. */
-  async function fetchLatestVersion(): Promise<string | null> {
+  async function fetchLatestVersion(signal?: AbortSignal): Promise<string | null> {
     try {
-      const res = await fetch(LATEST_VERSION_URL, { signal: AbortSignal.timeout(10_000) });
+      const res = await fetch(LATEST_VERSION_URL, { signal: withTimeout(signal, 10_000) });
       if (!res.ok) return null;
       const json = (await res.json()) as { version?: string };
       return json.version ?? null;
     } catch {
+      signal?.throwIfAborted();
       return null;
     }
   }
 
   /** Check whether a pi (self) update is available. */
-  async function checkSelfUpdate(): Promise<{
+  async function checkSelfUpdate(signal?: AbortSignal): Promise<{
     available: boolean;
     current: string | null;
     latest: string | null;
   }> {
     const current = VERSION || null;
-    const latest = await fetchLatestVersion();
+    const latest = await fetchLatestVersion(signal);
     if (!latest) return { available: false, current, latest: null };
     if (!current) return { available: true, current: null, latest };
     return { available: compareSemver(current, latest) < 0, current, latest };
@@ -377,11 +384,12 @@ export default async function (pi: ExtensionAPI) {
    * npm replaces the package. Connected Pi sessions back off instead of
    * immediately spawning another broker from the directory being updated.
    */
-  async function acquireIntercomUpdateLock(): Promise<{
+  async function acquireIntercomUpdateLock(signal?: AbortSignal): Promise<{
     signal: AbortSignal;
     assertOwned: () => void;
     release: () => Promise<void>;
   }> {
+    signal?.throwIfAborted();
     const lockPath = intercomRuntimePath("broker.spawn.lock");
     await mkdir(dirname(lockPath), { recursive: true });
 
@@ -393,6 +401,7 @@ export default async function (pi: ExtensionAPI) {
     let lockFd: number | null = null;
 
     for (let attempt = 0; attempt < 40 && lockFd === null; attempt++) {
+      signal?.throwIfAborted();
       try {
         const fd = openSync(lockPath, "wx");
         try {
@@ -506,7 +515,8 @@ export default async function (pi: ExtensionAPI) {
   }
 
   /** Stop the old Windows broker process tree that currently locks pi-intercom. */
-  async function stopIntercomBrokerForUpdate(): Promise<string> {
+  async function stopIntercomBrokerForUpdate(signal?: AbortSignal): Promise<string> {
+    signal?.throwIfAborted();
     const pidPath = intercomRuntimePath("broker.pid");
     let brokerPid: number;
     try {
@@ -542,12 +552,14 @@ export default async function (pi: ExtensionAPI) {
     ].join("; ");
     const stopped = await pi.exec("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script], {
       timeout: 10_000,
+      signal,
     });
     if (stopped.code !== 0 && isProcessAlive(brokerPid)) {
       throw new Error(`Could not stop pi-intercom broker ${brokerPid}: ${(stopped.stderr || stopped.stdout).trim()}`);
     }
 
     for (let attempt = 0; attempt < 100 && isProcessAlive(brokerPid); attempt++) {
+      signal?.throwIfAborted();
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
     if (isProcessAlive(brokerPid)) throw new Error(`pi-intercom broker ${brokerPid} did not stop.`);
@@ -1073,10 +1085,11 @@ export default async function (pi: ExtensionAPI) {
   /** Latest-version metadata for an npm package from the public registry (null on any error). */
   async function fetchLatestPackageMeta(
     pkgName: string,
+    signal?: AbortSignal,
   ): Promise<{ version: string; deps: Record<string, string> } | null> {
     try {
       const res = await fetch(`${NPM_REGISTRY_BASE}/${pkgName}/latest`, {
-        signal: AbortSignal.timeout(8_000),
+        signal: withTimeout(signal, 8_000),
       });
       if (!res.ok) return null;
       const json = (await res.json()) as {
@@ -1093,18 +1106,20 @@ export default async function (pi: ExtensionAPI) {
       };
       return { version: json.version, deps };
     } catch {
-      return null; // fail-open
+      signal?.throwIfAborted();
+      return null; // fail-open for registry/network failures, but never swallow caller cancellation
     }
   }
 
   /** Detect declared npm packages whose latest version is unresolvable by npm (workspace: protocol). */
   async function detectBrokenNpmUpdates(
     npmNames: string[],
+    signal?: AbortSignal,
   ): Promise<Map<string, { latest: string; badDeps: string[] }>> {
     const broken = new Map<string, { latest: string; badDeps: string[] }>();
     const checked = await Promise.all(
       npmNames.map(async (name) => {
-        const meta = await fetchLatestPackageMeta(name);
+        const meta = await fetchLatestPackageMeta(name, signal);
         if (!meta) return null;
         const bad = Object.entries(meta.deps)
           .filter(([, v]) => typeof v === "string" && v.startsWith("workspace:"))
@@ -1185,7 +1200,7 @@ export default async function (pi: ExtensionAPI) {
     const specs = await declaredPackageSpecs(cwd);
     const npmNames = [...new Set(specs.map(npmSpecToName).filter((n): n is string => !!n))];
     const hasNonNpm = specs.some((s) => !s.startsWith("npm:"));
-    const broken = await detectBrokenNpmUpdates(npmNames);
+    const broken = await detectBrokenNpmUpdates(npmNames, signal);
     const brokenNotice = brokenPackagesNotice(broken, broken.size > 0 && hasNonNpm);
 
     // Common path: nothing broken → one bulk command, exactly like before.
@@ -1222,6 +1237,7 @@ export default async function (pi: ExtensionAPI) {
     scope: UpdateScope,
     force: boolean,
     cwd: string,
+    signal?: AbortSignal,
   ): Promise<{
     result: { success: boolean; output: string; brokenNotice: string };
     postUpdate: { ok: boolean; text: string } | null;
@@ -1243,6 +1259,7 @@ export default async function (pi: ExtensionAPI) {
     };
 
     try {
+      signal?.throwIfAborted();
       const shouldPauseIntercom =
         scope !== "self"
         && process.platform === "win32"
@@ -1250,17 +1267,25 @@ export default async function (pi: ExtensionAPI) {
 
       if (shouldPauseIntercom) {
         phase = "Windows pi-intercom update preparation";
-        intercomLock = await acquireIntercomUpdateLock();
-        maintenanceNotice = await stopIntercomBrokerForUpdate();
+        intercomLock = await acquireIntercomUpdateLock(signal);
+        signal?.throwIfAborted();
+        maintenanceNotice = await stopIntercomBrokerForUpdate(signal);
+        signal?.throwIfAborted();
         intercomLock.assertOwned();
       }
 
+      const updateSignal = signal && intercomLock
+        ? AbortSignal.any([signal, intercomLock.signal])
+        : signal ?? intercomLock?.signal;
+
       phase = "package update";
-      const result = await runScopedUpdate(scope, force, cwd, intercomLock?.signal);
+      const result = await runScopedUpdate(scope, force, cwd, updateSignal);
+      signal?.throwIfAborted();
       intercomLock?.assertOwned();
 
       phase = "post-update package fixes";
-      const postUpdate = scope !== "self" ? await ensurePostUpdatePackagePatches(cwd, intercomLock?.signal) : null;
+      const postUpdate = scope !== "self" ? await ensurePostUpdatePackagePatches(cwd, updateSignal) : null;
+      signal?.throwIfAborted();
       intercomLock?.assertOwned();
       outcome = { result, postUpdate, maintenanceNotice };
     } catch (err: unknown) {
@@ -1275,6 +1300,32 @@ export default async function (pi: ExtensionAPI) {
       };
     } finally {
       if (intercomLock) {
+        // Even a cancelled or partially failed npm replacement may already have
+        // overwritten pi-intercom. Repair its launcher before releasing the
+        // respawn lock, otherwise a new broker can immediately lock node_modules.
+        try {
+          intercomLock.assertOwned();
+          const recovery = await ensurePiIntercomBrokerCwdPatch(cwd);
+          if (outcome.postUpdate === null || !recovery.ok) {
+            const recoveryNotice = `pi-intercom recovery check:\n${recovery.text}`;
+            outcome.maintenanceNotice = [outcome.maintenanceNotice, recoveryNotice].filter(Boolean).join("\n\n");
+          }
+          if (!recovery.ok) {
+            outcome.result = {
+              ...outcome.result,
+              success: false,
+              output: `${outcome.result.output}\n\npi-intercom recovery patch failed:\n${recovery.text}`.trim(),
+            };
+          }
+        } catch (err: unknown) {
+          const recoveryError = `pi-intercom recovery patch failed: ${err instanceof Error ? err.message : String(err)}`;
+          outcome.result = {
+            ...outcome.result,
+            success: false,
+            output: `${outcome.result.output}\n\n${recoveryError}`.trim(),
+          };
+        }
+
         try {
           await intercomLock.release();
         } catch (err: unknown) {
@@ -1308,7 +1359,7 @@ export default async function (pi: ExtensionAPI) {
       "`force` reinstalls pi even if current (scope 'self' only).",
     parameters: Type.Object({
       scope: Type.Optional(
-        Type.Union([Type.Literal("all"), Type.Literal("self"), Type.Literal("extensions")], {
+        StringEnum(["all", "self", "extensions"] as const, {
           description: "What to update. Default: 'all'.",
         }),
       ),
@@ -1324,7 +1375,7 @@ export default async function (pi: ExtensionAPI) {
         Type.Boolean({ description: "Reinstall pi even if current. Only with scope 'self'. Default: false." }),
       ),
     }),
-    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       const scope: UpdateScope = params.scope ?? "all";
       const checkOnly = params.check ?? false;
       const force = (params.force ?? false) && scope === "self";
@@ -1334,7 +1385,7 @@ export default async function (pi: ExtensionAPI) {
       // We can only reliably dry-check pi itself (via pi.dev). Package update
       // availability has no documented dry-run; pi already reports it at startup.
       if (checkOnly) {
-        const self = await checkSelfUpdate();
+        const self = await checkSelfUpdate(signal);
         const piLine = !self.latest
           ? "⚠️  Could not reach pi.dev to check pi."
           : self.available
@@ -1354,7 +1405,7 @@ export default async function (pi: ExtensionAPI) {
       // ── Confirm ────────────────────────────────────────────────────────────
       const args = updateArgs(scope, force);
       if (shouldConfirm) {
-        const self = scope === "extensions" ? null : await checkSelfUpdate();
+        const self = scope === "extensions" ? null : await checkSelfUpdate(signal);
         const piHint =
           self && self.latest
             ? self.available
@@ -1375,7 +1426,7 @@ export default async function (pi: ExtensionAPI) {
 
       // ── Run ──────────────────────────────────────────────────────────────
       ctx.ui.setStatus("pi-update", `Updating ${scopeLabel(scope)}…`);
-      const { result, postUpdate, maintenanceNotice } = await runUpdateWithPostPatches(scope, force, ctx.cwd);
+      const { result, postUpdate, maintenanceNotice } = await runUpdateWithPostPatches(scope, force, ctx.cwd, signal);
       ctx.ui.setStatus(
         "pi-update",
         result.success ? (postUpdate && !postUpdate.ok ? "Update complete; post-update patch failed!" : "Update complete!") : "Update failed!",

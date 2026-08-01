@@ -15,6 +15,7 @@ let alarmProcess: ChildProcess | null = null;
 let activeAlarmReason: AlarmReason | null = null;
 let alarmEnabled = true;
 let lastAlarmError: string | null = null;
+let lastAgentRunCompleted = false;
 
 function rememberError(error: unknown): void {
   lastAlarmError = error instanceof Error ? error.message : String(error);
@@ -216,7 +217,8 @@ function shouldPlayForAgentEnd(event: AgentEndEvent): boolean {
 
 export default function (pi: ExtensionAPI) {
   pi.on("agent_start", async (_event, ctx) => {
-    // Neuer Prompt → laufenden Sound stoppen
+    // Neuer Low-Level-Lauf → laufenden Sound stoppen und Abschlussstatus zurücksetzen.
+    lastAgentRunCompleted = false;
     if (shouldPlayForMode(ctx)) {
       stopAlarm();
     }
@@ -236,9 +238,16 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  pi.on("agent_end", async (event, ctx) => {
-    // Nur erfolgreiche, endgültige Antworten melden; keine Reconnect-/Retry-/Abort-Enden.
-    if (shouldPlayForMode(ctx) && shouldPlayForAgentEnd(event)) {
+  pi.on("agent_end", async (event) => {
+    // agent_end beendet nur einen Low-Level-Lauf. Pi 0.83 kann danach noch
+    // automatisch retryen, komprimieren oder eine Follow-up-Nachricht ausführen.
+    lastAgentRunCompleted = shouldPlayForAgentEnd(event);
+  });
+
+  pi.on("agent_settled", async (_event, ctx) => {
+    // Erst jetzt garantiert Pi, dass keine automatische Fortsetzung mehr folgt.
+    if (shouldPlayForMode(ctx) && lastAgentRunCompleted) {
+      lastAgentRunCompleted = false;
       playAlarm("agent-complete");
     }
   });

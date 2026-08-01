@@ -1,7 +1,7 @@
 # Pi configuration (`~/.pi`)
 
 Personal configuration for the [Pi coding agent](https://pi.dev): a custom
-theme, three local TypeScript extensions, and a few installed pi packages.
+theme, four local TypeScript extensions, and a few installed pi packages.
 
 ![Header](image.png)
 
@@ -62,6 +62,12 @@ Tool (`pi_update`, callable by the model):
 
 Version-pinned npm specs and pinned git refs are skipped automatically by
 `pi update`, so the extension does not special-case them.
+
+On Windows, package updates pause pi-intercom's detached broker and hold its
+respawn lock while npm replaces packages. Cancellation propagates through
+network checks and child processes; the broker working-directory patch is
+re-applied before the lock is released, including after partial failures or
+user cancellation.
 
 #### Upstream-publish-bug resilience
 
@@ -188,10 +194,17 @@ npm install
 
 This installs `@types/node` (fixes `process` and `node:*`), the pi packages
 (`@earendil-works/pi-coding-agent`, `@earendil-works/pi-tui`,
-`@earendil-works/pi-ai`), and `typebox` (aliased to `@sinclair/typebox` so
-`import { Type } from "typebox"` resolves). The `tsconfig.json` ties it
-together. Once types resolve, the implicit-any errors disappear too, because
-the callback parameter types are inferred from the pi API.
+`@earendil-works/pi-ai`), the modern `typebox` package, and TypeScript. The
+`tsconfig.json` ties it together. Once types resolve, the implicit-any errors
+disappear too, because the callback parameter types are inferred from the pi
+API.
+
+Validate the local extensions against the installed declarations with:
+
+```bash
+npm run typecheck
+npm test
+```
 
 These are `devDependencies` and are not used by Pi at runtime. If you prefer not
 to add a local `node_modules`, the errors are safe to ignore.
@@ -201,7 +214,7 @@ to add a local `node_modules`, the errors are safe to ignore.
 Update everything (Pi and packages) from a shell:
 
 ```bash
-pi update
+pi update --all
 ```
 
 Or from inside a session with the bundled command:
