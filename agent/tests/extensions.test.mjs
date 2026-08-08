@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createRequire } from "node:module";
 import test from "node:test";
+import { visibleWidth } from "@earendil-works/pi-tui";
+
+const require = createRequire(import.meta.url);
 
 const extensionContext = {
   cwd: "C:/Users/Sebas/.pi",
@@ -17,7 +21,7 @@ const extensionContext = {
   },
 };
 
-test("Pi 0.83 extension registrations and cancellation contract", async () => {
+test("Pi 0.84 extension registrations and cancellation contract", async () => {
   const temporaryAgentDir = await mkdtemp(join(tmpdir(), "pi-extension-test-"));
   const previousAgentDir = process.env.PI_CODING_AGENT_DIR;
   process.env.PI_CODING_AGENT_DIR = temporaryAgentDir;
@@ -41,7 +45,7 @@ test("Pi 0.83 extension registrations and cancellation contract", async () => {
     );
     assert.ok(alarmCommands.has("alarm-sounds"));
 
-    // Disable playback, then exercise the Pi 0.83 low-level-end → settled flow.
+    // Disable playback, then exercise the low-level-end → settled flow.
     await alarmCommands.get("alarm-sounds").handler("off", extensionContext);
     await alarmHandlers.get("agent_start")({ type: "agent_start" }, extensionContext);
     await alarmHandlers.get("agent_end")({
@@ -53,6 +57,23 @@ test("Pi 0.83 extension registrations and cancellation contract", async () => {
     const updateTools = new Map();
     const updateCommands = new Map();
     let execCalls = 0;
+
+    // Prove the tracked npm postinstall hook can repair a clean vulnerable
+    // pi-subagents package without relying on ignored local node_modules state.
+    const fixturePackageRoot = join(temporaryAgentDir, "npm", "node_modules", "pi-subagents");
+    const fixtureExecutorDir = join(fixturePackageRoot, "src", "runs", "foreground");
+    const fixtureExecutorPath = join(fixtureExecutorDir, "subagent-executor.ts");
+    await mkdir(fixtureExecutorDir, { recursive: true });
+    await writeFile(
+      fixtureExecutorPath,
+      'import { randomUUID } from "node:crypto";\nfunction run(_id) { const workflowRunId = _id; return workflowRunId; }\n',
+      "utf8",
+    );
+    const { patchPiSubagents } = require("../npm/patches/postinstall.cjs");
+    const fixturePatch = patchPiSubagents(fixturePackageRoot);
+    assert.equal(fixturePatch.changed, true);
+    assert.match(await readFile(fixtureExecutorPath, "utf8"), /const workflowRunId = randomUUID\(\);/);
+
     const updateModule = await import("../extensions/pi-autoupdate.ts");
     await updateModule.default({
       registerTool(definition) {
@@ -95,9 +116,155 @@ test("Pi 0.83 extension registrations and cancellation contract", async () => {
     const lockRelease = source.indexOf("await intercomLock.release()", finallyStart);
     assert.ok(maintenanceStart >= 0 && finallyStart > maintenanceStart);
     assert.ok(recoveryPatch > finallyStart && lockRelease > recoveryPatch);
+
+    // Every Windows update path, including signal-less slash commands, must
+    // use tree-aware timeout termination. Settings-derived npm names are
+    // allowlisted before they can reach cmd.exe.
+    assert.equal(source.includes('signal && process.platform === "win32"'), false);
+    assert.ok((source.match(/const result = process\.platform === "win32"/g) ?? []).length >= 2);
+    assert.match(source, /function isSafeNpmPackageName\(name: string\)/);
+    assert.match(source, /encodeURIComponent\(pkgName\)/);
+
+    // A live nonce-bearing updater lock cannot be stolen on age alone, while
+    // native two-line pi-intercom spawn locks retain their upstream lease.
+    assert.match(source, /nativeSpawnLeaseExpired = nonceLine\.length === 0/);
+    assert.match(source, /stale = !validPid \|\| !ownerAlive \|\| !validCreatedAt \|\| nativeSpawnLeaseExpired/);
+
+    // Pi 0.84 tool-call ids can contain `|`; the updater must preserve the
+    // package patch that decouples async workflow directory ids from them.
+    assert.match(source, /async function patchPiSubagentsAsyncWorkflowId/);
+    assert.match(source, /await ensurePiSubagentsAsyncWorkflowIdPatch\(process\.cwd\(\)\)/);
+    const runtimePackage = JSON.parse(await readFile(new URL("../npm/package.json", import.meta.url), "utf8"));
+    assert.equal(runtimePackage.scripts.postinstall, "node patches/postinstall.cjs");
   } finally {
     if (previousAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
     else process.env.PI_CODING_AGENT_DIR = previousAgentDir;
     await rm(temporaryAgentDir, { recursive: true, force: true });
   }
+});
+
+test("Stargate header remains width-safe and reuses its protocol image", async () => {
+  const handlers = new Map();
+  const commands = new Map();
+  let headerFactory;
+  const headerContext = {
+    ...extensionContext,
+    hasUI: true,
+    model: {
+      provider: "openai-codex",
+      id: "gpt-5.6-sol",
+    },
+    ui: {
+      ...extensionContext.ui,
+      setHeader(factory) {
+        headerFactory = factory;
+      },
+    },
+  };
+
+  const module = await import("../extensions/stargate-header.ts");
+  module.default({
+    on(name, handler) {
+      handlers.set(name, handler);
+    },
+    registerCommand(name, definition) {
+      commands.set(name, definition);
+    },
+    getAllTools() {
+      return [];
+    },
+  });
+
+  assert.deepEqual(
+    [...handlers.keys()],
+    ["session_start", "resources_discover", "before_agent_start", "model_select"],
+  );
+  assert.ok(commands.has("header"));
+  assert.ok(commands.has("refresh-header"));
+
+  await handlers.get("session_start")({ type: "session_start", reason: "startup" }, headerContext);
+  assert.equal(typeof headerFactory, "function");
+  const theme = { fg: (_color, text) => text };
+  const header = headerFactory(undefined, theme);
+  for (const width of [20, 46, 80, 160]) {
+    const lines = header.render(width);
+    assert.ok(lines.length > 0);
+    assert.ok(lines.every((line) => visibleWidth(line) <= width));
+  }
+  header.invalidate();
+
+  const source = await readFile(new URL("../extensions/stargate-header.ts", import.meta.url), "utf8");
+  assert.match(source, /protocolGateImage \?\?= new Image/);
+  assert.match(source, /protocolGateImage\.render\(imageWidth \+ 2\)/);
+});
+
+test("Token footer does not count unrelated tool arguments as chat", async () => {
+  const handlers = new Map();
+  let footerFactory;
+  const footerContext = {
+    ...extensionContext,
+    hasUI: true,
+    model: {
+      provider: "openai-codex",
+      id: "gpt-5.6-sol",
+      contextWindow: 128_000,
+      reasoning: true,
+    },
+    getContextUsage() {
+      return { tokens: 1_000, contextWindow: 128_000, percent: 0.78125 };
+    },
+    ui: {
+      ...extensionContext.ui,
+      setFooter(factory) {
+        footerFactory = factory;
+      },
+    },
+  };
+
+  const module = await import("../extensions/token-speed.ts");
+  module.default({
+    on(name, handler) {
+      handlers.set(name, handler);
+    },
+    getThinkingLevel() {
+      return "low";
+    },
+  });
+
+  await handlers.get("session_start")({ type: "session_start", reason: "startup" }, footerContext);
+  await handlers.get("message_start")({ message: { role: "assistant" } }, footerContext);
+  await handlers.get("message_update")({
+    assistantMessageEvent: { type: "text_delta", delta: "t".repeat(40) },
+  }, footerContext);
+  await handlers.get("message_update")({
+    assistantMessageEvent: {
+      type: "toolcall_start",
+      contentIndex: 0,
+      partial: { content: [{ type: "toolCall", name: "bash" }] },
+    },
+  }, footerContext);
+  await handlers.get("message_update")({
+    assistantMessageEvent: { type: "toolcall_delta", contentIndex: 0, delta: "b".repeat(180) },
+  }, footerContext);
+  await handlers.get("message_update")({
+    assistantMessageEvent: {
+      type: "toolcall_start",
+      contentIndex: 1,
+      partial: { content: [{ type: "toolCall", name: "bash" }, { type: "toolCall", name: "edit" }] },
+    },
+  }, footerContext);
+  await handlers.get("message_update")({
+    assistantMessageEvent: { type: "toolcall_delta", contentIndex: 1, delta: "w".repeat(180) },
+  }, footerContext);
+  await handlers.get("message_end")({
+    message: { role: "assistant", usage: { output: 100 } },
+  }, footerContext);
+
+  assert.equal(typeof footerFactory, "function");
+  const theme = { fg: (_color, text) => text };
+  const footer = footerFactory(undefined, theme, { getGitBranch: () => "master" });
+  const line = footer.render(300)[0];
+  assert.match(line, /talk 10/);
+  assert.match(line, /write 45/);
+  assert.doesNotMatch(line, /talk 55|talk 100/);
 });

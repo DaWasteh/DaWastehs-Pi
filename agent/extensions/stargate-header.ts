@@ -87,6 +87,7 @@ type ParsedPng = { width: number; height: number; pixels: Uint8Array };
 
 let cachedGatePng: ParsedPng | null | undefined;
 const cachedAnsiGateRows = new Map<string, string[]>();
+let protocolGateImage: Image | undefined;
 
 // ─── ALLGEMEINE HELFER ───────────────────────────────────────────────────────
 
@@ -363,18 +364,21 @@ function buildGateImage(theme: Theme, beamWidth: number): string[] | undefined {
 
 	const imageWidth = Math.max(1, Math.min(beamWidth - 2, GATE_IMAGE_MAX_WIDTH_CELLS));
 	const imagePad = Math.max(0, Math.floor((beamWidth - imageWidth) / 2));
-	const image = new Image(
+	// Keep one protocol image instance so Kitty reuses one image ID and the TUI
+	// width cache instead of allocating/retransmitting on every header redraw.
+	protocolGateImage ??= new Image(
 		imageBase64,
 		GATE_IMAGE_MIME,
-		{ fallbackColor: (s: string) => fg(theme, "muted", s) },
+		{ fallbackColor: (s: string) => s },
 		{
-			maxWidthCells: imageWidth,
+			maxWidthCells: GATE_IMAGE_MAX_WIDTH_CELLS,
 			maxHeightCells: GATE_IMAGE_MAX_HEIGHT_CELLS,
 			filename: GATE_IMAGE_FILENAME,
 		},
 	);
 
-	const rendered = image.render(beamWidth);
+	// Image reserves two cells internally, so this produces exactly imageWidth.
+	const rendered = protocolGateImage.render(imageWidth + 2);
 	if (rendered.length === 1 && rendered[0]?.includes("[Image:")) {
 		return buildAnsiGateImage(beamWidth);
 	}
@@ -746,17 +750,14 @@ export default function (pi: ExtensionAPI) {
 
 		ctx.ui.setHeader((_tui: unknown, theme: Theme) => ({
 			render(width: number): string[] {
-				return build(theme, width);
+				// Read the live UI theme so invalidate does not keep colors captured
+				// when this component factory was first installed.
+				return build((ctx.ui.theme as Theme | undefined) ?? theme, width);
 			},
 			invalidate() {
-				// Bei Theme-Wechsel neu aufbauen (Farben dürfen nicht eingebrannt
-				// bleiben). Stateless render genügt – wir setzen den Header neu.
-				ctx.ui.setHeader((_t: unknown, th: Theme) => ({
-					render(w: number): string[] {
-						return build(th, w);
-					},
-					invalidate() {},
-				}));
+				// ANSI rows are built statelessly. The protocol image keeps its ID,
+				// but drops width-dependent render output for the next paint.
+				protocolGateImage?.invalidate();
 			},
 		}));
 	}

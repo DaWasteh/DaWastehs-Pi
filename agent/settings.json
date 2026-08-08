@@ -1,5 +1,5 @@
 {
-  "lastChangelogVersion": "0.83.0",
+  "lastChangelogVersion": "0.84.1",
   "defaultProvider": "openai-codex",
   "defaultModel": "gpt-5.6-sol",
   "llamaServerUrl": "http://127.0.0.1:1234",
@@ -33,7 +33,8 @@
   "theme": "stargate-sg1",
   "httpIdleTimeoutMs": 0,
   "subagents": {
-    "defaultModel": "openai-codex/gpt-5.6-luna",
+    "defaultModel": "openai-codex/gpt-5.3-codex-spark",
+    "defaultThinking": "low",
     "agentOverrides": {
       "advisor": {
         "model": "openai-codex/gpt-5.6-sol",
@@ -64,7 +65,8 @@
         ]
       },
       "scout": {
-        "model": "openai-codex/gpt-5.6-luna",
+        "description": "Fast mechanical repository reconnaissance for bounded tasks that fit within 128k tokens.",
+        "model": "openai-codex/gpt-5.3-codex-spark",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
@@ -85,14 +87,16 @@
         ]
       },
       "context-builder": {
-        "model": "openai-codex/gpt-5.6-luna",
+        "description": "Mechanical context gathering and repository mapping for bounded tasks below 128k tokens.",
+        "model": "openai-codex/gpt-5.3-codex-spark",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
         ]
       },
       "delegate": {
-        "model": "openai-codex/gpt-5.6-luna",
+        "description": "Lightweight mechanical delegation for obvious, tightly scoped tasks below 128k tokens.",
+        "model": "openai-codex/gpt-5.3-codex-spark",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"
@@ -106,7 +110,16 @@
         ]
       },
       "bugtester": {
-        "model": "openai-codex/gpt-5.6-terra",
+        "description": "Targeted reproduction and mechanical regression testing for bounded bugs below 128k tokens.",
+        "model": "openai-codex/gpt-5.3-codex-spark",
+        "thinking": "low",
+        "fallbackModels": [
+          "llama-server=http://127.0.0.1:1234/local"
+        ]
+      },
+      "mechanic": {
+        "description": "Small obvious bug fixes and repository chores that need no architectural judgment and fit within 128k tokens.",
+        "model": "openai-codex/gpt-5.3-codex-spark",
         "thinking": "low",
         "fallbackModels": [
           "llama-server=http://127.0.0.1:1234/local"

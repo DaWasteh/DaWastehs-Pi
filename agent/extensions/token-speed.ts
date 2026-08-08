@@ -1,5 +1,5 @@
 /**
- * token-speed.ts — Footer-Erweiterung für den Pi Coding Agent (v0.80.2)
+ * token-speed.ts — Footer-Erweiterung für den Pi Coding Agent (v0.84.1)
  *
  * Footer-Layout (von links nach rechts):
  *   ctx 4.0k/1.0M (0%)  ▓▓▓░░░░░░░░  ↑ 42 tok/s  [medium]  think 1.2k  talk 3.4k  write 8.0k     glm-5.2 (master)
@@ -17,9 +17,10 @@
  *
  * ── Warum die Token-Geschwindigkeit jetzt korrekt ist ──────────────────────
  *   `Usage.output` enthält Thinking + Text + Tool-Call-Args GEMEINSAM (kein
- *   separates reasoning-Feld). Think-Tokens werden daher aus den
- *   `thinking_delta`-Stream-Events bestimmt und der autoritative
- *   `usage.output`-Wert wird proportional auf die drei Buckets aufgeteilt.
+ *   separates reasoning-Feld). Think-/Talk-/Write-Tokens werden daher aus den
+ *   Streaming-Deltas bestimmt und anteilig gegen den autoritativen
+ *   `usage.output`-Wert skaliert. Argumente anderer Tools bleiben bewusst ohne
+ *   Label, statt fälschlich als sichtbare Chat-Ausgabe zu zählen.
  *
  *   Die Geschwindigkeit misst das echte Decode-Fenster (erstes Delta →
  *   letztes Delta), NICHT message_start → message_end. Letzteres würde Prefill
@@ -117,7 +118,7 @@ function estimateTokens(chars: number): number {
   return chars <= 0 ? 0 : Math.max(1, Math.round(chars / 4));
 }
 
-/** Theme-Farbe passend zum Thinking-Level (gültige ThemeColor-Werte in v0.80.2). */
+/** Theme-Farbe passend zum Thinking-Level (gültige ThemeColor-Werte in v0.84.1). */
 function thinkingColor(level: ThinkingLevelOff):
   | "thinkingOff" | "thinkingMinimal" | "thinkingLow"
   | "thinkingMedium" | "thinkingHigh" | "thinkingXhigh" {
@@ -373,11 +374,11 @@ export default function tokenSpeed(pi: ExtensionAPI): void {
     let writeTokens: number;
 
     if (output !== null && totalChars > 0) {
-      // Autoritativen usage.output proportional auf die Buckets aufteilen,
-      // sodass die Summe exakt den realen Output-Tokens entspricht.
+      // Jeden sichtbaren Bucket proportional skalieren. Nicht-schreibende
+      // Tool-Argumente bleiben im Nenner, erhalten aber bewusst kein Label.
       thinkTokens = Math.round((output * tC) / totalChars);
+      talkTokens = Math.round((output * kC) / totalChars);
       writeTokens = Math.round((output * wC) / totalChars);
-      talkTokens = output - thinkTokens - writeTokens; // Rest → talk (Rundung auffangen)
     } else {
       // Kein usage.output verfügbar → reine Zeichen-Schätzung.
       thinkTokens = estimateTokens(tC);

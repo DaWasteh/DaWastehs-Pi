@@ -52,6 +52,7 @@ const LLAMA_SERVER_URL = "http://127.0.0.1:1234";
 const HERMES_MEMORY_PACKAGE_NAME = "pi-hermes-memory";
 const HEIMDALL_PACKAGE_NAME = "@casualjim/pi-heimdall";
 const PI_INTERCOM_PACKAGE_NAME = "pi-intercom";
+const PI_SUBAGENTS_PACKAGE_NAME = "pi-subagents";
 const INTERCOM_BROKER_CWD_LINE = "cwd: getIntercomDirPath(),";
 const INTERCOM_SPAWN_LOCK_HEARTBEAT_MS = 2_000;
 const INTERCOM_SPAWN_LOCK_STALE_MS = 10_000;
@@ -291,6 +292,65 @@ export default async function (pi: ExtensionAPI) {
     return piNpmRoots(cwd).map((root) => join(root, "node_modules", PI_INTERCOM_PACKAGE_NAME));
   }
 
+  function piSubagentsPackageRoots(cwd: string): string[] {
+    return piNpmRoots(cwd).map((root) => join(root, "node_modules", PI_SUBAGENTS_PACKAGE_NAME));
+  }
+
+  /**
+   * Pi 0.84 tool-call ids may contain `|`, which is illegal in Windows path
+   * components. pi-subagents 0.43 used that id directly as an async workflow
+   * directory name. Give workflows their own UUID, as ordinary async runs do.
+   */
+  async function patchPiSubagentsAsyncWorkflowId(
+    packageRoot: string,
+  ): Promise<{ found: boolean; ok: boolean; message?: string }> {
+    const executorPath = join(packageRoot, "src", "runs", "foreground", "subagent-executor.ts");
+    let source: string;
+    try {
+      source = await readFile(executorPath, "utf8");
+    } catch (err: unknown) {
+      if ((err as { code?: string }).code === "ENOENT") return { found: false, ok: true };
+      return {
+        found: true,
+        ok: false,
+        message: `⚠️ Could not read ${executorPath}: ${err instanceof Error ? err.message : String(err)}`,
+      };
+    }
+
+    if (/const workflowRunId\s*=\s*randomUUID\(\);/.test(source)) {
+      return { found: true, ok: true, message: `✅ ${PI_SUBAGENTS_PACKAGE_NAME} async workflow IDs are filesystem-safe.` };
+    }
+    if (!source.includes("const workflowRunId = _id;")) {
+      return {
+        found: true,
+        ok: false,
+        message: `⚠️ Could not find the async workflow ID assignment in ${executorPath}.`,
+      };
+    }
+
+    const next = source.replace(
+      "const workflowRunId = _id;",
+      "const workflowRunId = randomUUID(); // Filesystem-safe on Windows; tool-call ids may contain `|`.",
+    );
+    await writeFile(executorPath, next, "utf8");
+    return { found: true, ok: true, message: `✅ Patched ${executorPath} to use filesystem-safe async workflow IDs.` };
+  }
+
+  async function ensurePiSubagentsAsyncWorkflowIdPatch(cwd: string): Promise<{ ok: boolean; text: string }> {
+    const messages: string[] = [];
+    let ok = true;
+    let foundPackage = false;
+    for (const root of piSubagentsPackageRoots(cwd)) {
+      const patch = await patchPiSubagentsAsyncWorkflowId(root);
+      if (!patch.found) continue;
+      foundPackage = true;
+      if (!patch.ok) ok = false;
+      if (patch.message) messages.push(patch.message);
+    }
+    if (!foundPackage) messages.push(`ℹ️ ${PI_SUBAGENTS_PACKAGE_NAME} was not found in global/project npm packages.`);
+    return { ok, text: messages.join("\n") };
+  }
+
   /**
    * Keep pi-intercom's detached broker working directory outside node_modules.
    * On Windows a process whose cwd is inside a package prevents npm from
@@ -419,14 +479,19 @@ export default async function (pi: ExtensionAPI) {
         let stale = false;
         try {
           observed = await readFile(lockPath, "utf8");
-          const [pidLine = "", createdLine = "0"] = observed.trim().split(/\r?\n/);
+          const [pidLine = "", createdLine = "0", nonceLine = ""] = observed.trim().split(/\r?\n/);
           const ownerPid = Number.parseInt(pidLine, 10);
           const createdAt = Number.parseInt(createdLine, 10);
-          stale = !Number.isSafeInteger(ownerPid)
-            || ownerPid <= 0
-            || !isProcessAlive(ownerPid)
-            || !Number.isFinite(createdAt)
-            || Date.now() - createdAt > INTERCOM_SPAWN_LOCK_STALE_MS;
+          const validPid = Number.isSafeInteger(ownerPid) && ownerPid > 0;
+          const ownerAlive = validPid && isProcessAlive(ownerPid);
+          const validCreatedAt = Number.isFinite(createdAt);
+          const nativeSpawnLeaseExpired = nonceLine.length === 0
+            && validCreatedAt
+            && Date.now() - createdAt > INTERCOM_SPAWN_LOCK_STALE_MS;
+          // A nonce marks another updater's heartbeated lock. Never steal that
+          // lock from a live owner merely because its event loop paused. Native
+          // two-line pi-intercom spawn locks retain their upstream 10s lease.
+          stale = !validPid || !ownerAlive || !validCreatedAt || nativeSpawnLeaseExpired;
         } catch {
           stale = true;
         }
@@ -657,7 +722,10 @@ export default async function (pi: ExtensionAPI) {
   ): Promise<{ success: boolean; output: string }> {
     const { command, args } = buildNpmCommand(npmArgs);
     try {
-      const result = signal && process.platform === "win32"
+      // On Windows always own timeout/abort termination so cmd.exe and every
+      // npm/Node descendant are stopped as one tree. Slash commands have no
+      // AbortSignal, but their timeout needs the same protection as tool calls.
+      const result = process.platform === "win32"
         ? await execUpdateCommand(command, args, { cwd: npmRoot, timeoutMs, signal })
         : await pi.exec(command, args, { cwd: npmRoot, timeout: timeoutMs, signal });
       const stdout = (result as any).stdout ?? "";
@@ -977,6 +1045,10 @@ export default async function (pi: ExtensionAPI) {
   // Run once during extension startup so pi-heimdall sees the OS-specific value
   // before its session_start handler reads ~/.pi/agent/heimdall.json.
   await ensureHeimdallSandboxForPlatform();
+  // The tracked npm postinstall hook patches clean installations before Pi loads
+  // packages. This startup check is defense in depth for installs that skipped
+  // lifecycle scripts; a reload makes an already-imported package use the fix.
+  await ensurePiSubagentsAsyncWorkflowIdPatch(process.cwd());
 
   async function ensurePostUpdatePackagePatches(
     cwd: string,
@@ -993,11 +1065,13 @@ export default async function (pi: ExtensionAPI) {
     signal?.throwIfAborted();
     const intercom = await ensurePiIntercomBrokerCwdPatch(cwd);
     signal?.throwIfAborted();
+    const subagents = await ensurePiSubagentsAsyncWorkflowIdPatch(cwd);
+    signal?.throwIfAborted();
     const heimdall = await ensureHeimdallSandboxForPlatform();
     signal?.throwIfAborted();
     return {
-      ok: llama.ok && pixPretty.ok && pix.ok && hermes.ok && intercom.ok && heimdall.ok,
-      text: `${LLAMA_CPP_PACKAGE_NAME}:\n${llama.text}\n\n@xynogen/pix-pretty:\n${pixPretty.text}\n\n@xynogen/pix-optimizer:\n${pix.text}\n\n${HERMES_MEMORY_PACKAGE_NAME}:\n${hermes.text}\n\n${PI_INTERCOM_PACKAGE_NAME}:\n${intercom.text}\n\n${HEIMDALL_PACKAGE_NAME}:\n${heimdall.text}`,
+      ok: llama.ok && pixPretty.ok && pix.ok && hermes.ok && intercom.ok && subagents.ok && heimdall.ok,
+      text: `${LLAMA_CPP_PACKAGE_NAME}:\n${llama.text}\n\n@xynogen/pix-pretty:\n${pixPretty.text}\n\n@xynogen/pix-optimizer:\n${pix.text}\n\n${HERMES_MEMORY_PACKAGE_NAME}:\n${hermes.text}\n\n${PI_INTERCOM_PACKAGE_NAME}:\n${intercom.text}\n\n${PI_SUBAGENTS_PACKAGE_NAME}:\n${subagents.text}\n\n${HEIMDALL_PACKAGE_NAME}:\n${heimdall.text}`,
     };
   }
 
@@ -1009,7 +1083,9 @@ export default async function (pi: ExtensionAPI) {
   ): Promise<{ success: boolean; output: string }> {
     const { command, args } = buildPiCommand(piArgs);
     try {
-      const result = signal && process.platform === "win32"
+      // Use tree-aware timeout handling for every Windows invocation, including
+      // the signal-less `/update` slash-command path.
+      const result = process.platform === "win32"
         ? await execUpdateCommand(command, args, { timeoutMs, signal })
         : await pi.exec(command, args, { timeout: timeoutMs, signal });
       const stdout = (result as any).stdout ?? "";
@@ -1072,14 +1148,21 @@ export default async function (pi: ExtensionAPI) {
     return [...specs];
   }
 
-  /** Extract the bare package name from an `npm:` spec (strips any `@version`). */
+  /** Strict npm-name allowlist before a settings-derived name reaches cmd.exe. */
+  function isSafeNpmPackageName(name: string): boolean {
+    if (name.length === 0 || name.length > 214) return false;
+    const segment = "[a-z0-9](?:[a-z0-9._~-]*[a-z0-9])?";
+    return new RegExp(`^(?:@${segment}/)?${segment}$`).test(name);
+  }
+
+  /** Extract and validate the bare package name from an `npm:` spec. */
   function npmSpecToName(spec: string): string | null {
     if (!spec.startsWith("npm:")) return null;
     const rest = spec.slice("npm:".length);
     // Scoped names start with '@'; their version separator is the SECOND '@'.
     const at = rest.startsWith("@") ? rest.indexOf("@", 1) : rest.indexOf("@");
     const name = at > 0 ? rest.slice(0, at) : rest;
-    return name || null;
+    return isSafeNpmPackageName(name) ? name : null;
   }
 
   /** Latest-version metadata for an npm package from the public registry (null on any error). */
@@ -1088,7 +1171,7 @@ export default async function (pi: ExtensionAPI) {
     signal?: AbortSignal,
   ): Promise<{ version: string; deps: Record<string, string> } | null> {
     try {
-      const res = await fetch(`${NPM_REGISTRY_BASE}/${pkgName}/latest`, {
+      const res = await fetch(`${NPM_REGISTRY_BASE}/${encodeURIComponent(pkgName)}/latest`, {
         signal: withTimeout(signal, 8_000),
       });
       if (!res.ok) return null;
@@ -1352,7 +1435,7 @@ export default async function (pi: ExtensionAPI) {
     description:
       "Update pi and/or its installed packages (extensions, skills, prompts, themes) via the pi CLI. " +
       "`scope` selects what to update: 'all' (default) updates pi and packages, 'self' only pi, " +
-      "'extensions' only packages. On Windows, pi-intercom's detached broker is paused and its respawn lock is held while npm replaces the package, avoiding EBUSY. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234, @xynogen/pix-pretty is refreshed if pix-optimizer needs its icon catalog, the Heimdall sandbox is enabled on Linux and disabled on Windows/non-Linux, and known overwritten local package patches are re-applied. " +
+      "'extensions' only packages. On Windows, pi-intercom's detached broker is paused and its respawn lock is held while npm replaces the package, avoiding EBUSY. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234, @xynogen/pix-pretty is refreshed if pix-optimizer needs its icon catalog, pi-subagents async workflow IDs are kept Windows-safe, the Heimdall sandbox is enabled on Linux and disabled on Windows/non-Linux, and known overwritten local package patches are re-applied. " +
       "Packages whose latest npm version is unresolvable by npm (e.g. published with an unresolved `workspace:*` dependency) are detected via a registry pre-flight and skipped, updating the rest individually, so a single broken upstream release never blocks other updates. " +
       "`check=true` reports whether a pi update is available without installing (package update availability is " +
       "surfaced by pi at startup; there is no dry-run for it). `confirm=false` skips the confirmation dialog. " +

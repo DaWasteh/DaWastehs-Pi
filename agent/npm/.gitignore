@@ -1,2 +1,6 @@
 *
 !.gitignore
+!package.json
+!package-lock.json
+!patches/
+!patches/postinstall.cjs

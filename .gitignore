@@ -1,8 +1,14 @@
 # --- Credentials / secrets ---
 **/auth.json
+**/credentials.json
 .env
 .env.*
 !.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.token
 
 # --- Dependencies / generated bins ---
 node_modules/
@@ -12,16 +18,25 @@ npm/
 !agent/npm/
 !agent/npm/package.json
 !agent/npm/package-lock.json
+!agent/npm/patches/
+!agent/npm/patches/postinstall.cjs
 bin/
 
 # --- Pi runtime / local OS state ---
 # OS-specific and runtime files are created/updated locally by Pi/extensions.
 # Do not track them: Windows/Linux/macOS would otherwise keep flipping them.
 agent/heimdall.json
+agent/heimdall.default.jsonc
 agent/run-history.jsonl
-agent/.pi-hermes-locks.sqlite
+agent/models-store.json
+agent/missions/
 agent/intercom/
+agent/**/*.sqlite
+agent/**/*.sqlite-*
+agent/**/*.db
+agent/**/*.db-*
 .pi-subagents/
+.fallow/
 sessions/
 
 # Keep Hermes memory databases/user memories private, but publish reusable skills.

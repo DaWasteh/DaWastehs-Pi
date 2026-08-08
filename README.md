@@ -14,6 +14,7 @@ theme, four local TypeScript extensions, and a few installed pi packages.
 │   ├── settings.json          # global settings (provider, model, packages, theme)
 │   ├── pix.json               # pix extension state/config
 │   ├── heimdall.example.json  # portable example; real heimdall.json is OS-local
+│   ├── agents/                # custom routed roles (Mechanic, Bugtester, …)
 │   ├── npm/
 │   │   ├── package.json       # installed pi package manifest
 │   │   └── package-lock.json  # installed pi package lockfile
@@ -23,13 +24,13 @@ theme, four local TypeScript extensions, and a few installed pi packages.
 │   │   └── skills/            # global reusable Pi skills (published)
 │   ├── projects-memory/
 │   │   └── <project>/skills/   # project-scoped reusable Pi skills (published)
-│   └── extensions/            # auto-discovered local extensions (*.ts)
-│       ├── alarm-sound.ts
-│       ├── pi-autoupdate.ts
-│       ├── stargate-header.ts
-│       └── token-speed.ts
-└── themes/
-    └── stargate-sg1.json      # custom theme
+│   ├── extensions/            # auto-discovered local extensions (*.ts)
+│   │   ├── alarm-sound.ts
+│   │   ├── pi-autoupdate.ts
+│   │   ├── stargate-header.ts
+│   │   └── token-speed.ts
+│   └── themes/
+│       └── stargate-sg1.json  # custom theme
 ```
 
 Extensions placed in `~/.pi/agent/extensions/*.ts` are auto-discovered for all
@@ -67,7 +68,12 @@ On Windows, package updates pause pi-intercom's detached broker and hold its
 respawn lock while npm replaces packages. Cancellation propagates through
 network checks and child processes; the broker working-directory patch is
 re-applied before the lock is released, including after partial failures or
-user cancellation.
+user cancellation. It also preserves a Windows compatibility patch for
+`pi-subagents`: async workflows use an independent UUID for their runtime
+directory because Pi 0.84 tool-call IDs may contain the Windows-invalid `|`
+character. The tracked `agent/npm/patches/postinstall.cjs` applies this fix
+while Pi installs package dependencies, before the package is first loaded;
+the update extension re-checks it at startup and after later updates.
 
 #### Upstream-publish-bug resilience
 
@@ -133,9 +139,11 @@ This prevents Windows/Linux/macOS checkouts from constantly dirtying Git with an
 OS-specific config flip. `agent/heimdall.example.json` documents the portable
 shape of the config.
 
-Other local runtime files are ignored too, including `agent/run-history.jsonl`,
-`agent/intercom/`, sessions, Hermes memory databases, and project `MEMORY.md`
-files.
+Other local runtime files are ignored too, including generated Heimdall defaults,
+`agent/models-store.json`, mission indexes, run history, intercom/session state,
+SQLite lock databases (including WAL/SHM sidecars), Hermes memory databases, and
+project `MEMORY.md` files. Credential files, private keys, certificates, tokens,
+and environment files are excluded defensively as well.
 
 ## Published skills
 
@@ -165,6 +173,24 @@ Key fields in `agent/settings.json`:
 - `theme` — active theme name
 - `compaction` — context compaction thresholds
 - `thinkingBudgets` / `defaultThinkingLevel` — reasoning token budgets per level
+- `subagents` — central role-to-model routing and local fallback policy
+
+### Subagent model hierarchy
+
+The parent orchestrator stays on GPT-5.6 Sol High. Child roles use the cheapest
+appropriate tier without per-run model overrides:
+
+| Tier | Intended work | Roles |
+| --- | --- | --- |
+| GPT-5.3 Codex Spark Low (128k) | Mechanical repo scans, targeted reproductions, tiny obvious fixes | `scout`, `context-builder`, `delegate`, `bugtester`, `mechanic` |
+| GPT-5.6 Luna Low | Lightweight non-mechanical evidence synthesis | `web-searcher` |
+| GPT-5.6 Terra Low | Substantial implementation and research | `worker`, `researcher` |
+| GPT-5.6 Sol High | Leadership, planning, critical review, architecture judgment | `teamleiter`, `advisor`, `oracle`, `planner`, `reviewer` |
+
+Spark is also the subagent default, so unclassified roles do not silently inherit
+the expensive parent model. Every configured role falls back only to the stable
+local llama-server alias at `http://127.0.0.1:1234/local`. Tasks that may exceed
+Spark's 128k window or require non-mechanical judgment must be escalated upward.
 
 ## Editor setup
 
@@ -199,11 +225,20 @@ This installs `@types/node` (fixes `process` and `node:*`), the pi packages
 disappear too, because the callback parameter types are inferred from the pi
 API.
 
-Validate the local extensions against the installed declarations with:
+For a clean checkout, also restore the tracked Pi runtime manifest; its
+postinstall hook applies required package compatibility patches before loading:
+
+```bash
+npm --prefix npm install
+```
+
+Validate both the local extensions and runtime dependency set with:
 
 ```bash
 npm run typecheck
 npm test
+npm audit --omit=dev
+npm --prefix npm audit --omit=dev
 ```
 
 These are `devDependencies` and are not used by Pi at runtime. If you prefer not
