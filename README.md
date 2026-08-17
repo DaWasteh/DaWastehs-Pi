@@ -1,7 +1,8 @@
 # Pi configuration (`~/.pi`)
 
 Personal configuration for the [Pi coding agent](https://pi.dev): a custom
-theme, four local TypeScript extensions, and a few installed pi packages.
+theme, five local TypeScript extensions, governed procedural skills, and a few
+installed pi packages.
 
 ![Header](image.png)
 
@@ -27,8 +28,11 @@ theme, four local TypeScript extensions, and a few installed pi packages.
 │   ├── extensions/            # auto-discovered local extensions (*.ts)
 │   │   ├── alarm-sound.ts
 │   │   ├── pi-autoupdate.ts
+│   │   ├── skill-governor/    # lifecycle governance, routing, audit, quarantine
 │   │   ├── stargate-header.ts
 │   │   └── token-speed.ts
+│   ├── skill-governor/
+│   │   └── config.json        # tracked policy; candidates/evidence stay local
 │   └── themes/
 │       └── stargate-sg1.json  # custom theme
 ```
@@ -112,6 +116,34 @@ Custom footer showing context usage with a progress bar, measured generation
 speed (tokens/second), the active thinking level, and estimated thinking and
 output token counts, with the model and git branch right-aligned.
 
+### `skill-governor/`
+
+Applies lifecycle governance to procedural skills without patching package
+extensions. Per task it exposes at most five positively matched automatic skill
+descriptions; unmatched auto skills stay lazy-searchable, while manual/canary
+skills require approval. It blocks direct `skill_manage` mutations, writes new
+procedures to an undiscovered candidate store, and requires three distinct
+recurring observations before automatic generation. Generator/critic calls stay
+on the current provider by default; static audit, independent criticism,
+subtractive repair, digest-bound evidence, canary, qualified activation,
+retirement, and rollback form separate lifecycle gates.
+
+Commands:
+
+- `/skill-governor status|candidates` — inspect the current library/candidate state
+- `/skill-governor audit <name>` — run the paper-derived static triage
+- `/skill-governor evolve` — force a candidate proposal from the latest task
+- `/skill-governor evidence <id> <json-file>` — import digest-bound paired evidence
+- `/skill-governor promote <id> [canary|active]` — confirmed promotion
+- `/skill-governor retire <name> <reason>` / `rollback <id>` — reversible removal
+- `/skill-governor allow-write <path>` — approve exactly one ordinary edit/write
+
+The `skill_route` and `skill_governor` model tools expose controlled lazy
+routing and candidate submission. Runtime candidates, evidence, snapshots, and
+retired copies stay local under `agent/skill-governor/`; only `config.json` is
+tracked. On Windows this is strong tool-layer defense-in-depth, not an OS
+security boundary, because Pi and extensions still run as the logged-in user.
+
 ## Installed packages
 
 Declared in `settings.json` (and/or user settings). See each package upstream
@@ -188,9 +220,13 @@ appropriate tier without per-run model overrides:
 | GPT-5.6 Sol High | Leadership, planning, critical review, architecture judgment | `teamleiter`, `advisor`, `oracle`, `planner`, `reviewer` |
 
 Spark is also the subagent default, so unclassified roles do not silently inherit
-the expensive parent model. Every configured role falls back only to the stable
-local llama-server alias at `http://127.0.0.1:1234/local`. Tasks that may exceed
-Spark's 128k window or require non-mechanical judgment must be escalated upward.
+the expensive parent model. Local llama-server fallbacks are intentionally omitted
+while the provider/`local` alias is absent from Pi's active model registry:
+pi-subagents validates every fallback before launch, so a configured offline alias
+would block even a healthy cloud primary. Add the exact registered
+`llama-server=http://127.0.0.1:1234/local` candidate only while `/v1/models`
+actually exposes it. Tasks that may exceed Spark's 128k window or require
+non-mechanical judgment must be escalated upward.
 
 ## Editor setup
 

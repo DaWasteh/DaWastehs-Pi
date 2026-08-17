@@ -3,7 +3,6 @@ name: mechanic
 description: Behebt kleine offensichtliche Bugs und erledigt mechanische Repo-Aufgaben unter 128k Tokens.
 tools: read, grep, find, ls, bash, edit, write
 model: openai-codex/gpt-5.3-codex-spark
-fallbackModels: llama-server=http://127.0.0.1:1234/local
 thinking: low
 systemPromptMode: replace
 inheritProjectContext: true

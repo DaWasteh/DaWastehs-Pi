@@ -35,8 +35,12 @@ agent/**/*.sqlite
 agent/**/*.sqlite-*
 agent/**/*.db
 agent/**/*.db-*
+agent/skill-governor/*
+!agent/skill-governor/config.json
+agent/benchmarks/skill-governor/results/
 .pi-subagents/
 .fallow/
+web-search-cache/
 sessions/
 
 # Keep Hermes memory databases/user memories private, but publish reusable skills.

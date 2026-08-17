@@ -6,7 +6,10 @@
   "description": "Local pi extensions. These devDependencies exist ONLY so the editor (VS Code / tsserver) can resolve imports. Pi loads the extensions via jiti at runtime using its own bundled copies of these packages, so nothing here changes runtime behaviour.",
   "scripts": {
     "test": "node --test tests/*.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "skill:lint": "node benchmarks/skill-governor/lint.mjs",
+    "skill:bench": "node benchmarks/skill-governor/run.mjs --runs 3",
+    "skill:report": "node benchmarks/skill-governor/report.mjs"
   },
   "devDependencies": {
     "@earendil-works/pi-ai": "*",

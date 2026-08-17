@@ -1,7 +1,14 @@
 ---
 name: llama-runner
-description: Working on llama_runner.py, the unified self-healing launcher for llama-server (OOM recovery, repetition detection, benchmark mode). Use for ANY change to model presets, start scripts, escalation logic, benchmark grids, or when a local model crashes/loops/OOMs. Project-local skill for C:\LAB\ai-local.
+description: "Working on llama_runner.py, the unified self-healing launcher for llama-server (OOM recovery, repetition detection, benchmark mode). Use for ANY change to model presets, start scripts, escalation logic, benchmark grids, or when a local model crashes/loops/OOMs. Project-local skill for C:\\LAB\\ai-local. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
 
 # llama_runner.py — Self-Healing llama-server Launcher
 
@@ -28,3 +35,8 @@ description: Working on llama_runner.py, the unified self-healing launcher for l
 - Models in `I:\models\<Family>\...` subfolders (Mistral, Gemma, Qwen, 1Bit-Bonsai, Frankenmerger, ...). Keep subfolders.
 - Two builds: `C:\LAB\ai-local\llama.cpp` (standard) and `C:\LAB\ai-local\1bllama.cpp` (Bonsai/1-bit). Folder name is the build-selection signal.
 - Open design goals: fuzzy mmproj matching (quant suffixes differ between model and mmproj), family-based default sampling params, size heuristics, `--model <path>` for arbitrary GGUFs so most models need no explicit preset.
+
+## Verification
+1. For parser/preset changes, run focused unit/config tests without starting a large model.
+2. For process/OOM/repetition changes, use the `devstral-24b` smoke preset first and verify shutdown plus port cleanup.
+3. Run the multi-configuration benchmark only when tuning/benchmark behavior is the explicit task; do not load the 128B model for an unrelated launcher edit.

@@ -1,42 +1,30 @@
 ---
-name: pandaking-system
-description: Core system context for Basti's workstation "Pandaking". ALWAYS consult this before running shell commands, writing scripts, choosing file paths, or making hardware/VRAM assumptions. Covers hardware specs, dual-boot layout, directory conventions, and OS-specific rules for Windows 11 and Ubuntu 26.04.
+name: "pandaking-system"
+description: "Hardware, OS, directory, and toolchain facts for Basti's Pandaking workstation. Use when commands, paths, builds, GPU/VRAM, or OS behavior depend on this machine; do not treat remembered drive paths as task authorization."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## When to Use
+Use for machine-specific commands, scripts, path selection, build settings, GPU/VRAM assumptions, or Windows/Ubuntu behavior. Explicit current user paths and live system evidence override remembered locations. Ask when parallel lab trees make the target ambiguous.
 
-# Pandaking System Context
+## Procedure
+1. Match the user's language; keep code, code comments, and commit messages in English unless the repository says otherwise.
+2. Use the fixed hardware facts: Core Ultra 9 285K (24 threads; build parallelism normally 20), RX 9070 XT 16 GB, Radeon AI Pro R9700 32 GB, Intel iGPU, 48 GB RAM, MSI MEG Z890 UNIFY-X, Secure Boot disabled. Never propose CUDA-only paths.
+3. Distinguish OS identities: Windows `Pandaking`/`C:\Users\Sebas`; Ubuntu `KillMicroslop`/`/home/dawasteh`. Windows prefers Vulkan; Ubuntu can use ROCm/HIP.
+4. Resolve the task's actual drive before using remembered lab paths. Common roots include `C:\LAB\ai-local`, `H:\LAB\ai-local`, `I:\models`, and `C:\Users\Sebas\.pi`, but they are context, not defaults that override the request.
+5. Use VS 2026 (`"Visual Studio 18 2026"`, toolset v180), CMake >=4.2, Node >=22, and modern Python. Apply `powershell-windows-scripting` only for Windows scripting work.
+6. Check port 1234 before starting another llama-server. Keep model families in separate `I:\models\<family>` folders.
+7. Before boot/ESP operations, manually load `dualboot-separated-drives` and re-observe device mappings.
 
-## Identity
-- Windows hostname: `Pandaking`, user `Sebas` (home `C:\Users\Sebas`). Ubuntu hostname: `KillMicroslop`, user `dawasteh` (home `/home/dawasteh`, German locale — Desktop is `Schreibtisch`).
-- Primary OS: Windows 11. Secondary OS: Ubuntu 26.04 on its own solo-boot SSD (used for ROCm/Linux-only AI workloads).
-- Language: respond in German or English matching the user; keep code, comments and commit messages in English.
+## Pitfalls
+- There is no NVIDIA GPU.
+- Nine drives and parallel lab trees make remembered drive/device assumptions unsafe.
+- A machine fact does not authorize package installation, cleanup, restart, or destructive action.
+- macOS is a shipping target for some projects but is not locally testable here.
 
-## Hardware (do not guess — these are fixed facts)
-- CPU: Intel Core Ultra 9 285K (24 threads; use `--parallel 20` for builds)
-- GPU 0: AMD Radeon RX 9070 XT — 16 GB VRAM, RDNA4, gfx1201
-- GPU 1: AMD Radeon AI Pro R9700 — 32 GB VRAM, RDNA4, gfx1201
-- iGPU: Intel (shows up as a third Vulkan device — usually exclude it)
-- RAM: 48 GB DDR5
-- Board: MSI MEG Z890 UNIFY-X, Secure Boot DISABLED
-- Storage: nine drives, multiple NVMe SSDs. Never assume a single ESP or single OS disk (see the `dualboot-separated-drives` skill before touching bootloaders).
-
-**There is no NVIDIA hardware. Never propose CUDA-only solutions.** GPU paths are Vulkan (preferred on Windows) or ROCm/HIP (fragile on Windows for gfx1201, usable on Ubuntu).
-
-## Directory conventions (Windows)
-- `C:\LAB\ai-local\llama.cpp` — main llama.cpp source build (Vulkan)
-- `C:\LAB\ai-local\1bllama.cpp` — separate build for 1-bit "Bonsai" models
-- `H:\LAB\ai-local\...` — secondary lab area (e.g. `ocr_b17400_llama.cpp` experimental builds)
-- `I:\models` — GGUF model store, organized in named subfolders per family (Mistral, Gemma, Qwen, 1Bit-Bonsai, Frankenmerger, ...). Do NOT flatten into one folder.
-- `C:\LAB\llama-mcp-server\` — local filesystem MCP server project
-- `C:\Users\Sebas\.pi\` — Pi Coding Agent config root on Windows (`agent\settings.json`, `agent\agents\`, `agent\prompts\`, `agent\extensions\`); on Ubuntu it is `/home/dawasteh/.pi/agent`, with the published GitHub clone at `/home/dawasteh/.pi/DaWastehs-Pi`.
-
-## Toolchain versions
-- Visual Studio 2026 (v18.x, toolset v180). CMake generator string is `"Visual Studio 18 2026"` and requires CMake >= 4.2. Never emit `"Visual Studio 17 2022"`.
-- CMake via winget (`winget upgrade Kitware.CMake`), Ninja available as fallback generator.
-- Node.js >= 22, Python 3.12, Git with Git Bash.
-- Default shell: PowerShell. Follow the `powershell-windows-scripting` skill for script style.
-
-## Standing rules
-1. Prefer local/free compute (llama.cpp, mostly ~35B GGUFs, models rotate often) for cheap tasks; the cloud API model only for hard reasoning — see `pi-model-routing`.
-2. Before destructive disk/boot operations, verify device↔UUID mappings with `blkid`/`lsblk` output; never act on remembered mappings.
-3. Local llama-server default port: 1234. Check the port is free before starting a new instance.
-4. When file paths matter, ask which drive (`C:` vs `H:` LAB trees exist in parallel) instead of assuming.
+## Verification
+1. For path-sensitive work, confirm the target path/drive exists or ask the user.
+2. For hardware-sensitive work, use current command/log evidence when it can drift (device order, free VRAM, port/process state).
+3. Do not run a broad hardware inventory when the task does not depend on it.

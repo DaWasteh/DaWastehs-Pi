@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "enabled": true,
+  "promptPolicyEnabled": true,
+  "routing": {
+    "maxAutoSkills": 5,
+    "minScore": 2
+  },
+  "disableDirectSkillManageMutations": true,
+  "protectActiveSkillFiles": true,
+  "evolution": {
+    "enabled": true,
+    "userApprovedAt": "2026-08-17T18:38:00Z",
+    "minToolCalls": 8,
+    "minToolTypes": 2,
+    "minObservations": 3,
+    "allowCrossProvider": false,
+    "generatorModel": "openai-codex/gpt-5.6-terra",
+    "criticModel": "openai-codex/gpt-5.6-sol",
+    "generatorThinking": "low",
+    "criticThinking": "high",
+    "maxCandidateChars": 12000,
+    "maxRepairRounds": 2
+  },
+  "promotion": {
+    "automaticCanary": true,
+    "automaticActive": true,
+    "allowedAutomaticRisks": [
+      "low"
+    ],
+    "maxCriticRisk": 0.2,
+    "minCriticConfidence": 0.8,
+    "minPairedRuns": 3,
+    "requirePositiveUtility": true
+  },
+  "overrides": {}
+}

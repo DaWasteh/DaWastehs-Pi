@@ -1,23 +1,30 @@
 ---
-name: simulation-and-system-golden-rules
-description: "Performance rules for grid simulations and Windows system monitoring. Use for cellular automata, falling-sand style grids, high-frequency telemetry, PDH/WMI choices, and CPU/GPU performance triage."
+name: "simulation-and-system-golden-rules"
+description: "Optimize deterministic grid simulations and high-frequency Windows telemetry using cache-aware layouts and appropriate PDH/WMI paths. Use for measured simulation/monitoring work; do not apply to ordinary app logic or unprofiled micro-optimization."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: low
 ---
+## When to Use
+Use for cellular automata/falling-sand grids, deterministic neighbor updates, CPU/GPU simulation paths, high-frequency telemetry, or monitoring stalls. Explicit simulation semantics and profiler evidence override generic optimization advice.
 
-# Grid Simulation & Windows System Monitoring
+## Procedure
+1. Keep hot grids flat and consider SoA only for repeatedly scanned fields. Use double buffering when neighbor reads require deterministic old state; document intentional in-place bias otherwise.
+2. Tile working sets for cache only after measuring a relevant bottleneck. The 285K supports AVX2/VNNI, not AVX-512.
+3. Offload to GPU only when work amortizes transfer/synchronization and retain a CPU reference path for correctness.
+4. Use PDH for Windows GPU engine utilization and WMI only for slow inventory/VRAM. Load `windows-gpu-utilization-pdh` for the exact PDH sequence.
+5. Keep polling off the UI thread, use adaptive intervals/waitable timers where appropriate, and close COM/PDH handles deterministically.
+6. Preserve existing architecture when it meets latency/CPU targets; do not add threading/SIMD/GPU paths without a measured requirement.
 
-## Grid simulation (CPU)
-- Flat 1D arrays + SoA for hot cell state; AoS/nested arrays cause cache misses on large grids.
-- Double-buffer when deterministic neighbor reads matter; otherwise document the intentional in-place bias.
-- Tile working sets to L1 (e.g. ≤32 KB including both buffers); too large thrashes L1, too small wastes loop overhead. CPU/cache facts → `windows-cpp-golden-rules`.
-- SIMD target is AVX2/VNNI only — AVX-512 intrinsics crash the 285K (illegal instruction).
-
-## GPU offload
-Offload only when the grid amortizes transfer/sync cost; always keep a CPU reference path for correctness. Device roles/inference → `amd-dual-gpu-inference`.
-
-## System monitoring
-- GPU engine utilization on Windows: PDH, not WMI → `windows-gpu-utilization-pdh` for the canonical sequence.
-- WMI only for one-shot inventory/VRAM or slow async queries; never poll synchronously in a UI thread.
-- Adaptive polling intervals + waitable timers: idle monitoring thread stays ~0 % CPU. Watch for leaked COM/PDH handles on long runs.
+## Pitfalls
+- Nested arrays/AoS can hurt hot scans but may be clearer and sufficient for small grids.
+- Too-small tiles add overhead; too-large tiles thrash cache.
+- Synchronous WMI polling can freeze UI and report stale utilization.
+- GPU transfer/sync can cost more than the kernel.
 
 ## Verification
-Profiler confirms cache/tile behavior; disassembly shows AVX2 only (no 512-bit instructions); long telemetry runs show stable handle/memory counts; CPU and GPU paths match on deterministic test grids.
+1. For simulation changes, compare a focused deterministic fixture against the reference path.
+2. Profile only the changed/hot scenario and inspect generated instructions only for SIMD work.
+3. For telemetry changes, run a bounded known-load sample and check update cadence plus handle/memory stability.
+4. Do not require long profiling runs for unrelated edits.

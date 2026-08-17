@@ -1,43 +1,31 @@
 ---
-name: windows-gpu-utilization-pdh
-description: "Read Windows GPU engine utilization via PDH (cache-free, Task-Manager-grade) instead of WMI. Use whenever a monitor shows stale 0% GPU readings or new Windows GPU telemetry code is written."
+name: "windows-gpu-utilization-pdh"
+description: "Read live Windows GPU engine utilization with PDH instead of stale WMI/perflib formatting. Use when telemetry shows false 0%/stale GPU load or new high-frequency utilization code is added; do not use for slow inventory-only queries."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: low
 ---
+## When to Use
+Use for Windows GPU utilization sampling at sub-second cadence or stale WMI readings. Keep WMI for one-shot inventory/VRAM when it is sufficient. Repository telemetry semantics override this aggregation recipe.
 
-# Windows GPU Utilization via PDH
-
-## Symptom
-A dashboard shows long 0% GPU stretches while AMD Adrenalin/NVIDIA/Task Manager shows sustained load. Root cause: `Win32_PerfFormattedData_GPUPerformanceCounters_GPUEngine` is WMI/perflib-cached at roughly one-second granularity.
-
-## Canonical PDH sequence
-Use one wildcard counter and let PDH maintain the dynamic instance list:
-
-```python
-# ctypes shape, not a full wrapper
-PdhOpenQueryW(None, None, byref(query))
-PdhAddCounterW(query, r"\GPU Engine(*)\Utilization Percentage", 0, byref(counter))
-PdhCollectQueryData(query)  # prime
-# on every poll:
-PdhCollectQueryData(query)
-PdhGetFormattedCounterArrayW(counter, PDH_FMT_DOUBLE, byref(size), byref(count), None)
-buf = (ctypes.c_ubyte * size.value)()
-PdhGetFormattedCounterArrayW(counter, PDH_FMT_DOUBLE, byref(size), byref(count), buf)
-```
-
-Parse instance names like `pid_X_luid_0xHHHH_0xLLLL_phys_0_eng_N_engtype_TYPE`; aggregate max per `(luid, engine_index)` and sum by engine type. Bind LUID to physical GPUs through DXGI `AdapterLuid`/DeviceId.
-
-## Locale and smoothing rules
-- The English counter path works on German/non-English Windows; do not localize it. `PdhLookupPerfNameByIndex` returns empty for these GPU counters.
-- Prime with at least two collects; the first sample for a rate counter is usually zero.
-- Apply a short EMA (`tau≈0.25s`) to hide frame-scale 0↔100 oscillation on bursty workloads.
+## Procedure
+1. Open one PDH query and add the English wildcard counter `\\GPU Engine(*)\\Utilization Percentage`.
+2. Prime the rate counter, then collect and read the formatted counter array on each poll. Do not cache/enumerate a static GPU-engine instance list.
+3. Parse instance names by LUID, engine index, and engine type. Aggregate duplicate rows per engine conservatively, then map LUIDs to physical adapters through DXGI/device identity.
+4. Keep Microsoft Basic Render Driver and irrelevant zero-only adapters out through existing inventory identity rules.
+5. Apply only modest smoothing when the UI needs it; preserve raw samples for diagnostics.
+6. Close query/counter resources on shutdown and keep sampling off the UI thread.
 
 ## Pitfalls
-- `PdhEnumObjectItems` is instantly stale for GPU engines; never enumerate instances manually.
-- WMI remains fine for slow VRAM/inventory queries, not high-frequency engine utilization.
-- AMD ADL is dead on RDNA4; ADLX is out-of-process COM and not a practical ctypes shortcut.
-- Microsoft Basic Render Driver can appear as a zero-util LUID; filter it by vendor/name/VRAM as existing inventory code does.
+- The first rate sample is normally zero.
+- `PdhEnumObjectItems` snapshots become stale as GPU engine instances appear/disappear.
+- WMI formatted GPU counters repeat at roughly one-second cadence.
+- AMD ADL is not the correct RDNA4 shortcut; ADLX is a separate API with different semantics.
+- Engine sums and vendor “overall GPU” metrics are not always identical.
 
 ## Verification
-- Compare PDH and WMI at 250 ms under known load; PDH updates every sample, WMI repeats/stales.
-- Sustained 100% load reads roughly 92–100% in >90% of PDH samples; EMA has no sub-5% dips.
-- `PdhAddCounterW` succeeds on de-DE Windows using the English path.
-- VRAM/inventory WMI code still works after only the utilization path is switched to PDH.
+1. Under a known bounded load, compare several 250 ms PDH samples with Task Manager/vendor telemetry and confirm updates are not repeated WMI snapshots.
+2. Verify the English counter path works on the German Windows installation.
+3. Run the directly affected telemetry tests and a short handle/memory stability sample.
+4. Preserve existing inventory/VRAM behavior; do not require a long soak for an unrelated UI change.

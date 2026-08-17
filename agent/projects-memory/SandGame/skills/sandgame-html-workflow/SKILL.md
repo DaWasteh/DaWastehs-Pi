@@ -1,7 +1,13 @@
 ---
 name: sandgame-html-workflow
-description: "Safely modify and validate the SandGame single-file HTML simulation. Use for sand_game.html UI, simulation-loop, rendering, input, material, WebGL2, or CPU/GPU render-path changes."
+description: "Safely modify and validate the SandGame single-file HTML simulation. Use for sand_game.html UI, simulation-loop, rendering, input, material, WebGL2, or CPU/GPU render-path changes. Do not use for unrelated project work or to broaden a smaller task."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
 
 # SandGame — Single-File HTML Simulation Workflow
 

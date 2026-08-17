@@ -1,7 +1,14 @@
 ---
 name: validate-tetris-static-app
-description: "Validate this repo's no-build Tetris static app after code or workflow changes"
+description: "Run the complete no-build Tetris app validation across logic, HTML, syntax, and deploy workflow. Manual-only: invoke for explicit validation/release scope; do not use for a tiny isolated edit."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## Governance
+Explicit task requirements and changed files override this checklist. It is manual-only because it combines logic, HTML, syntax, and deploy checks. Run only the validation scope the user requested; do not add dependency or release work.
 
 # Tetris — Static App Validation
 

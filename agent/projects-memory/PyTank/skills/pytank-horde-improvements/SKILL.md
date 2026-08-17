@@ -1,7 +1,14 @@
 ---
 name: pytank-horde-improvements
-description: "Fix and validate PyTank horde mode, enemy AI, FFA/co-op mode semantics, map selection, spawn telegraphs, and pygame/Python 3.12 tooling. Use for any pytank.py gameplay or validation change."
+description: "Fix and validate broad PyTank horde, AI, FFA/co-op, map, spawn, and tooling behavior. Manual-only: invoke for matching cross-system gameplay/validation work; do not use for a small isolated change."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## Governance
+Explicit task requirements and current game behavior override this skill. It is manual-only because it spans gameplay systems and multiple validation tools. Select only the matching subsystem/checks; do not turn a local change into a full gameplay/release sweep.
 
 # PyTank — Horde Mode & Game-Logic Rules
 

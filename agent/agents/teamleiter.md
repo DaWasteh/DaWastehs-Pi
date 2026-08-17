@@ -3,7 +3,6 @@ name: teamleiter
 description: Orchestriert zwei rollenbasiert geroutete Analyse-Subagents und synthetisiert deren Evidenz mit Sol High.
 tools: read, grep, find, ls, bash, subagent
 model: openai-codex/gpt-5.6-sol
-fallbackModels: llama-server=http://127.0.0.1:1234/local
 thinking: high
 systemPromptMode: replace
 inheritProjectContext: true

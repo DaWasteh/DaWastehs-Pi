@@ -1,33 +1,33 @@
 ---
-name: powershell-windows-scripting
-description: House rules for writing PowerShell, batch, and Python launcher scripts on this Windows 11 system. Use whenever generating or fixing any .ps1/.bat/CLI automation, subprocess handling, downloads, or console output on Windows. Encodes fixes for recurring bugs (encoding, error handling, process shutdown, pip/venv quirks).
+name: "powershell-windows-scripting"
+description: "Write or repair PowerShell, batch, and Windows launcher/process automation with correct encoding, error handling, shutdown, downloads, and venv behavior. Do not use for POSIX-only scripts or as authority to install/update/delete tools."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## When to Use
+Use for `.ps1`, `.bat`, Windows CLI automation, subprocess supervision, downloads, console encoding, or Windows venv/wheel issues. Explicit task behavior and existing launcher contracts override these defaults.
 
-# Windows Scripting House Rules
+## Procedure
+1. In PowerShell, set `$ErrorActionPreference = "Stop"` and check `$LASTEXITCODE` after critical native commands. Prefer splatting over fragile backtick continuations.
+2. Re-open a shell after approved tool installation or environment changes; use `where.exe` to diagnose shadowing first.
+3. In batch files, initialize UTF-8 deliberately when needed, check `%errorlevel%`, and keep failure output visible for interactive launchers.
+4. In Python, use argument-vector subprocesses, explicit UTF-8, normalized Windows path comparisons, and process-group-aware `CTRL_BREAK_EVENT` shutdown for cooperative console children.
+5. Use reader threads/async streams only when live process reaction is required; a simple bounded `subprocess.run` is preferable for ordinary commands.
+6. For broken wheel installs, diagnose the venv and package set before downloading or bypassing the resolver. Direct wheel recovery and environment mutation require task scope/approval.
+7. Use resumable downloads and verify size/hash when the artifact is large or security-sensitive.
+8. Preserve existing repositories and build outputs. Never make `git reset --hard`, `git clean -fdx`, recloning, or build deletion a default repair.
 
-## PowerShell
-- Start scripts with `$ErrorActionPreference = "Stop"`. Native EXE failures don't throw — check `$LASTEXITCODE` after critical native calls (cmake, git, npm) explicitly.
-- Backtick line continuation only with NO trailing spaces. Prefer splatting for long argument lists.
-- After installing/updating tools (winget), a NEW shell session is required for PATH changes. Say so in instructions.
-- `where.exe <tool>` to find shadowed/duplicate installs (classic: old Node before new Node).
-- Prefer incremental workflows: `git fetch + reset --hard + git clean -fdx -e <keep>` instead of re-cloning; delete only `build/` instead of the repo.
+## Pitfalls
+- Native executable failure does not become a PowerShell exception automatically.
+- Backticks with trailing spaces break parsing.
+- Repeated Ctrl+C can leave supervised server processes or ports in a bad state.
+- Nightly ROCm/Torch wheels must be resolved as a compatible set.
+- Global PATH, package, toolchain, and registry mutations require explicit approval.
 
-## Batch (.bat)
-- First lines: `chcp 65001` and `set PYTHONUTF8=1` — prevents `UnicodeEncodeError` from emoji/umlaut prints on cp1252 consoles.
-- Check `%errorlevel%` after every critical step; end failure paths with `pause` so the window doesn't vanish.
-- Verify tool presence (git, curl, tar) before use and print clear messages.
-
-## Python on Windows
-- Avoid emoji in `print()` for console tools; or guard with `isinstance(sys.stderr, io.TextIOWrapper)` before `reconfigure(encoding="utf-8")` (also satisfies mypy without ignore comments).
-- Path comparisons are case-insensitive on Windows — normalize with `.lower()` / `os.path.normcase` before comparing (e.g. blocklists).
-- Graceful shutdown of console subprocesses (llama-server): send `CTRL_BREAK_EVENT` (process started with `CREATE_NEW_PROCESS_GROUP`), not SIGTERM. Warn users to press Ctrl+C once, not repeatedly (zombie process on port otherwise).
-- Long-running subprocess monitoring: dedicated reader thread on stdout/stderr with regex matching (e.g. OOM patterns) — never blocking `subprocess.run` when live reaction is needed.
-
-## pip / venv / wheels
-- Broken/interrupted installs leave corrupt RECORD files → `--force-reinstall` can enter resolver backtracking hell. Prefer direct wheel URLs with resumable `curl -C -` downloads, then `pip install --ignore-installed --no-deps <wheel>`.
-- Nightly wheel ecosystems (torch/ROCm): versions must be resolved as a SET — intersect the available tags across all required packages and pick the newest complete set; never pin one package's nightly and hope the rest match.
-- On this system pip inside dedicated venvs; on Ubuntu use `--break-system-packages` only in throwaway environments.
-
-## Downloads & repos
-- `curl -L -C -` for resumable large downloads; verify file size afterwards.
-- Log to files under a `logs\` directory next to the script; timestamped filenames.
+## Verification
+1. Parse the changed PowerShell/batch script or run its smallest dry-run/help path.
+2. Exercise only the changed success/failure/shutdown path with a disposable process or fixture.
+3. For environment recovery, verify from a fresh process and report what was intentionally not changed.
+4. Run broad launcher/install tests only when those workflows changed.

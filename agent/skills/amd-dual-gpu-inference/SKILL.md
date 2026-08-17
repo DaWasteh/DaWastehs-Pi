@@ -1,34 +1,31 @@
 ---
-name: amd-dual-gpu-inference
-description: Running LLM inference on the dual AMD RDNA4 setup (RX 9070 XT 16GB + Radeon AI Pro R9700 32GB) via llama.cpp/Vulkan. Use whenever choosing llama-server flags, splitting a model across GPUs, sizing context/KV cache/VRAM, interpreting llama-bench output, or answering Wave32/Wave64, coopmat, or MXFP questions.
+name: "amd-dual-gpu-inference"
+description: "Choose llama.cpp/Vulkan devices, tensor splits, KV/context budgets, and benchmarks for Pandaking's RX 9070 XT 16 GB plus R9700 32 GB. Do not use for game rendering, CUDA systems, generic ML installs, or unrelated GPU advice."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## When to Use
+Use for llama-server/llama-bench device flags, model placement, VRAM/KV sizing, coopmat, Wave32/64, MXFP, or dual-server planning on this workstation. Explicit task constraints and observed server output override these recipes.
 
-# Dual-GPU Inference on RDNA4 (Vulkan)
+## Procedure
+1. Confirm the current device map before acting: Vulkan0 RX 9070 XT 16 GB, Vulkan1 R9700 32 GB, Vulkan2 Intel iGPU (normally excluded).
+2. For a model intentionally split across both AMD cards, start from `--device Vulkan0,Vulkan1 -ts 1,2`. Prefer `--device Vulkan1` for a single-card run needing more than roughly 12 GB for weights plus KV.
+3. Budget measured weight, KV, graph, and runtime allocations together. Never use `--mlock` when the GGUF approaches/exceeds the 48 GB system RAM.
+4. For OOM work, change one bounded axis at a time: ubatch, context, KV precision, GPU layers, then host cache/spill. KV type changes require a restart.
+5. Treat two independent servers on distinct ports/cards as a concurrency option, not as an automatic default. Port 1234 remains primary.
+6. Benchmark the real model and compare observed throughput/VRAM rather than inferring performance from one log field.
 
-## Device map
-| Vulkan ID | Card | VRAM | Role |
-|---|---|---|---|
-| Vulkan0 | RX 9070 XT | 16 GB | Gaming + secondary inference |
-| Vulkan1 | Radeon AI Pro R9700 | 32 GB | Primary inference card |
-| Vulkan2 | Intel iGPU | shared | EXCLUDE from inference |
+## Pitfalls
+- Vulkan device order is not the same as every HIP/PyTorch device order.
+- `warp size: 64` is driver-selected on Windows; it is not fixed by a build flag.
+- `KHR_coopmat` means matrix-cooperative support is exposed, not that every kernel is optimal.
+- MXFP is a model quantization format, not a reason to switch backend.
+- Windows ROCm/HIP for gfx1201 remains fragile; do not replace a working Vulkan path without a task-specific reason.
+- InsightFace/ONNX face tooling should default to CPU/DirectML here, not CUDA.
 
-## Flag recipes
-- Big model across both AMD cards, iGPU excluded:
-  `--device Vulkan0,Vulkan1 -ts 1,2` (tensor split proportional to 16/32 GB)
-- Single-card runs: prefer the R9700 (`--device Vulkan1`) for anything > ~12 GB weights + KV.
-- Two parallel llama-server instances (one per card) are viable — distinct ports, keep 1234 as the primary. This is the preferred way to raise subagent concurrency (see `pi-model-routing`).
-
-## Memory budgeting rules
-- 48 GB system RAM: NEVER `--mlock` a model whose GGUF is near or above RAM size (e.g. 49 GB Mistral-Medium-128B on 48 GB RAM = crash). Use `--cache-ram` spill (e.g. ~20000 MB) instead.
-- KV cache quantization (`-ctk/-ctv q8_0/q4_0`) cannot be changed live — it always requires a server restart.
-- When OOM-tuning, alternate axes instead of exhausting one: ubatch → ctx → KV precision → ngl → cache_ram.
-
-## Facts to state confidently (recurring questions)
-- Both AMD cards report `matrix cores: KHR_coopmat` → RDNA4 matrix cores ARE being used under Vulkan.
-- `warp size: 64` in logs: Wave size on Vulkan is chosen by the driver at runtime, not by any build flag. Windows proprietary driver → Wave64; Linux RADV → typically Wave32. For matrix-core-heavy LLM inference the practical difference is small; verify with llama-bench A/B, don't theorize.
-- MXFP4 GGUFs run on the Vulkan build with no special flags or build options.
-- ROCm/HIP on Windows for gfx1201 is unreliable; on Ubuntu it is a legitimate option.
-- InsightFace and similar ONNX face tooling: run on CPU on this system (no CUDA, ROCm EP unstable).
-
-## Benchmark protocol
-Use `llama-bench` with the real model from `I:\models\...`, compare configs (backend, ctx, KV quant, ubatch) side by side, and trust measured t/s over log heuristics. For quality-vs-speed sweeps use `llama_runner.py benchmark` (see local `llama-runner` skill).
+## Verification
+1. Run one focused `llama-bench` or server smoke using the target GGUF/config.
+2. Confirm only intended devices are selected and record actual context, KV type, throughput, and observed VRAM.
+3. Broaden to a configuration sweep only when tuning is the task; stop when the acceptance target is met.

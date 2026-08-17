@@ -1,7 +1,14 @@
 ---
 name: comfyui-amd-workflows
-description: Building and repairing ComfyUI workflow JSONs on AMD GPUs (RDNA4 locally, RDNA2 for Kevin's RX 6800). Use for any ComfyUI error, workflow graph edit, face-preservation/FaceID pipeline, ACE-Step audio generation, IPAdapter/InsightFace issue, or comfyui-rocm installation/repair. No CUDA exists on these machines.
+description: "Building and repairing ComfyUI workflow JSONs on AMD GPUs (RDNA4 locally, RDNA2 for Kevin's RX 6800). Use for any ComfyUI error, workflow graph edit, face-preservation/FaceID pipeline, ACE-Step audio generation, IPAdapter/InsightFace issue, or comfyui-rocm installation/repair. No CUDA exists on these machines. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
 
 # ComfyUI on AMD — Workflow & Repair Rules
 
@@ -33,3 +40,9 @@ ACE-Step 1.5 XL runs on RDNA4 with no CUDA deps; reference audio/timbre via the 
 - torch + ROCm SDK nightly wheels must match as a SET: fetch all relevant index pages (torch, torchvision, torchaudio, rocm meta/core/devel/gfx103x libs), intersect available Windows cp312 tags, install the newest COMPLETE set. Single-package pinning always ends in version mismatch.
 - Corrupt installs (interrupted extraction → `ModuleNotFoundError: torchgen`, broken RECORD): resumable curl downloads + `pip install --ignore-installed --no-deps`, never `--force-reinstall` into resolver backtracking.
 - Harden install.bat: debug mode on, tool checks (git/curl/tar), visible GPU detection, errorlevel checks, pause on failure.
+
+## Verification
+1. For workflow edits, parse the changed JSON and validate only its node types, widgets, reciprocal links, IDs, and referenced local assets.
+2. Query current `/object_info` when node/schema compatibility changed; do not run a live generation for a note/layout-only edit.
+3. Run one short queue smoke only for executable graph/model changes and confirm the queue returns idle.
+4. Dependency/ROCm installation repair requires its own explicit approval and environment verification; it is not part of ordinary workflow validation.

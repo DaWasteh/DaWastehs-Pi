@@ -1,36 +1,32 @@
 ---
-name: windows-cpp-golden-rules
-description: "Windows 11 C/C++ and systems-programming rules for MSVC, CMake/Ninja, WinAPI, kernel-mode, and Intel Core Ultra 9 285K tuning. Use whenever writing or reviewing native Windows code."
+name: "windows-cpp-golden-rules"
+description: "Implement and validate native Windows C/C++ with MSVC/CMake, WinAPI resource safety, analyzers, and 285K tuning. Manual-only: invoke for explicit native/toolchain review; do not apply to a tiny isolated edit or portable module."
+version: 3
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## When to Use
+Load manually for cross-cutting MSVC/CMake/Ninja, WinAPI/COM/PDH handles, native memory/SIMD/threading, kernel code, or Windows build failures. For a tiny isolated edit, follow the task contract without loading this full checklist. Explicit repository toolchain and acceptance criteria override preferred defaults.
 
-# Windows C/C++ Golden Rules (285K / Arrow Lake-S)
+## Procedure
+1. Preserve the repository's supported generator/package strategy. Prefer CMake presets/manifests when introducing new configuration, but do not migrate an established build without scope.
+2. Use `/W4` and correct warnings in changed code. Add `/WX`, `/analyze`, or ASan when supported and justified by the component/risk; do not make all three mandatory for every edit.
+3. On the Core Ultra 9 285K, assume 8 P + 16 E cores, no SMT, and AVX2/VNNI maximum. Gate specialized code with runtime feature detection.
+4. Wrap Windows handles/resources with RAII and correct deleters; use wide WinAPI boundaries and deliberate UTF-8 conversion.
+5. Use aligned allocation APIs supported by MSVC and `std::filesystem` with long-path-aware application configuration where path length matters.
+6. For kernel/system code, enforce IRQL/paged-memory rules and return structured `NTSTATUS`/`HRESULT`/`std::expected` errors.
+7. Apply P/E-core affinity only when latency/profile evidence justifies it.
 
-## Toolchain
-- MSVC + CMake + Ninja; `vcpkg.json` manifest mode; standardize with `CMakePresets.json`.
-- `/W4 /WX`, `/analyze`, ASan (`/fsanitize=address`) are normal development tools, not polish.
-
-## CPU tuning (Core Ultra 9 285K)
-- 24 logical cores = 8 P + 16 E, no Hyper-Threading — don't assume SMT pairs.
-- Max SIMD is AVX2/AVX-VNNI. **No AVX-512.** Runtime-dispatch via `__cpuid`/`IsProcessorFeaturePresent`.
-- Latency-critical render/audio/game threads → P-cores; background/asset/logging work → E-cores (`SetThreadSelectedCpuSets`).
-- Caches: P L1d 48 KB, P L2 2 MB private; E L1d 64 KB, E L2 4 MB per 4-core cluster; 36 MB shared L3.
-
-## Memory, resources, WinAPI
-- RAII everywhere; wrap `HANDLE`/`HMODULE`/`HKEY`/COM/PDH with custom deleters:
-
-```cpp
-using unique_handle = std::unique_ptr<std::remove_pointer_t<HANDLE>, decltype(&CloseHandle)>;
-```
-
-- MSVC has no `std::aligned_alloc` → `_aligned_malloc/_aligned_free`, aligned `operator new`, or PMR.
-- `W` APIs at OS boundaries (`CreateFileW`); internal text may stay UTF-8, convert deliberately.
-- `std::filesystem` + `<longPathAware>true</longPathAware>` manifest; never assume `MAX_PATH`.
-
-## Kernel/system code
-Check IRQL before paged memory; `NonPagedPoolNx`; model errors as `NTSTATUS`/`HRESULT`/`std::expected`, not silent booleans.
+## Pitfalls
+- The 285K has no AVX-512; emitting it can cause illegal instructions.
+- `std::aligned_alloc` is not the portable MSVC choice.
+- ANSI WinAPI and `MAX_PATH` assumptions create avoidable encoding/path bugs.
+- Forcing `/WX` across untouched third-party code can block unrelated work.
 
 ## Verification
-```powershell
-rg "std::aligned_alloc|/arch:AVX512|CreateFileA|RegOpenKeyA|strcpy|sprintf|gets" .
-```
-Build with `/W4 /WX /analyze` + ASan; CPUID dispatch smoke test exercises AVX2 and fallback paths; static search finds no ANSI WinAPI calls, banned C functions, or AVX-512 flags.
+1. Run the directly affected configure/build target or unit test.
+2. Add static analysis/ASan for memory-, parser-, boundary-, or release-sensitive changes where supported.
+3. For SIMD/CPU-affinity changes, execute fallback and optimized paths on a focused fixture and inspect instructions/profile evidence.
+4. Avoid a full build matrix unless public ABI, buildsystem, or release scope changed.

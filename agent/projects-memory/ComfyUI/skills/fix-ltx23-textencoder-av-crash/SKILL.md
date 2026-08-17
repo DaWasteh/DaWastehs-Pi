@@ -1,7 +1,13 @@
 ---
 name: fix-ltx23-textencoder-av-crash
-description: "Fix LTX-2.3/LTXAV ComfyUI workflows crashing in preprocess_text_embeds (\"got 4 and 3\") because a raw Gemma text encoder or missing AV latent/audio pipeline is wired. Use for LTX-2.3 workflow repair on H:/ComfyUI."
+description: "Fix LTX-2.3/LTXAV ComfyUI workflows crashing in preprocess_text_embeds (\\\"got 4 and 3\\\") because a raw Gemma text encoder or missing AV latent/audio pipeline is wired. Use for LTX-2.3 workflow repair on H:/ComfyUI. Do not use for unrelated project work or to broaden a smaller task."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
 
 # ComfyUI LTX-2.3 Text Encoder + AV Latent Repair
 

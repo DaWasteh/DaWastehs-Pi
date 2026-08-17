@@ -1,7 +1,14 @@
 ---
 name: maintain-supercalc-benchmark-fairness
-description: "Maintain SuperCalc hidden benchmark content and fairness. Use when changing enhanced_calc.cpp vulnerabilities, enhanced_exploits.md, hidden ground truth, severity/counts, or scorer-facing evidence definitions."
+description: "Maintain SuperCalc hidden benchmark content and fairness. Use when changing enhanced_calc.cpp vulnerabilities, enhanced_exploits.md, hidden ground truth, severity/counts, or scorer-facing evidence definitions. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: critical
+disable-model-invocation: true
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
 
 # SuperCalc Benchmark — Fairness & Ground Truth
 

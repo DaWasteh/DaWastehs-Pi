@@ -1,10 +1,16 @@
 ---
 name: "validate-pandalifesg"
-description: "Validate and smoke-test the native VOXEngine-based PandaLifeSG after edits to scene data, Lua scripts, controls, menu/UI, assets, or engine integration."
-version: 2
 created: "2026-07-09"
-updated: "2026-07-09"
+description: "Validate and smoke-test native VOXEngine-based PandaLifeSG across scene, Lua, controls, assets, and integration. Manual-only: invoke for explicit cross-cutting/runtime validation; do not use for a narrow local edit."
+version: 3
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## Governance
+Explicit task requirements and current engine/game state override this skill. It is manual-only because it builds and launches a native runtime. Run only the requested validation stages; do not broaden a narrow edit into full runtime/release work.
+
 ## When to Use
 Use after touching `../VOXEngine/data/main.json`, `../VOXEngine/data/scripts/*.lua`, VOXEngine C++ UI/input/runtime files, asset generators, launchers, or controls/menu behavior. The old single-file HTML app has been removed.
 

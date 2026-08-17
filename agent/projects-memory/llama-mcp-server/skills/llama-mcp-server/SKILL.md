@@ -1,7 +1,13 @@
 ---
 name: llama-mcp-server
-description: Working on the local filesystem MCP server for llama.cpp WebUI at C:\LAB\llama-mcp-server. Use for any MCP server change, FastMCP/transport question, CORS or connection failure between llama.cpp WebUI and an MCP endpoint, or new MCP tool development on this system.
+description: "Working on the local filesystem MCP server for llama.cpp WebUI at C:\\LAB\\llama-mcp-server. Use for any MCP server change, FastMCP/transport question, CORS or connection failure between llama.cpp WebUI and an MCP endpoint, or new MCP tool development on this system. Do not use for unrelated project work or to broaden a smaller task."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
 
 # Local Filesystem MCP Server (FastMCP / HTTP)
 
@@ -22,4 +28,9 @@ description: Working on the local filesystem MCP server for llama.cpp WebUI at C
 - Implement declared tool parameters fully (e.g. `list_directory(recursive=...)`) — no dead parameters or unused variables.
 
 ## When extending
-New tools: plain typed Python functions with docstrings registered on the FastMCP instance. Path-taking tools must resolve + validate against the allowlist/blocklist BEFORE any filesystem call. Test via the health route and a WebUI connection to `/mcp` after every transport-level change.
+New tools: plain typed Python functions with docstrings registered on the FastMCP instance. Path-taking tools must resolve + validate against the allowlist/blocklist BEFORE any filesystem call.
+
+## Verification
+1. For a tool-only change, run the focused unit/schema test and call that tool once through MCP Inspector or the local client.
+2. For transport/CORS/session changes, verify the health route plus one real WebUI handshake to `/mcp` and inspect exposed protocol/session headers.
+3. Do not require both servers or all 47 tools to run for an isolated implementation change; broaden only for shared `server_common.py` or release scope.

@@ -1,7 +1,14 @@
 ---
 name: build-goauld-flet-android-apk
-description: "Build and debug the Goauld Translator Mobile Flet Android APK on Linux or Windows. Use for APK packaging, blue-screen/startup issues, Flet cache problems, Gradle locks, phone-vs-emulator architecture mismatches, or release handoff."
+description: "Build and debug the Goauld Translator Mobile Flet Android APK on Linux or Windows. Use for APK packaging, blue-screen/startup issues, Flet cache problems, Gradle locks, phone-vs-emulator architecture mismatches, or release handoff. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
 
 # Goauld Translator Mobile — Flet Android APK Build
 
@@ -32,11 +39,10 @@ $env:PYTHONUTF8 = "1"
 $env:PYTHONPATH = "."
 python -m pytest -q
 python -m compileall -q app goauld_engine main.py app.py
-Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
 flet build apk --arch arm64-v8a --clear-cache --verbose --yes
 ```
 
-If Gradle/Lint files are locked, close Android Studio and kill only Gradle/Kotlin daemons (`jps -l`, `taskkill /PID <pid> /F /T`), then delete `build/` and retry.
+If stale generated output must be removed, first confirm `build/` contains no user-authored files and obtain approval; prefer moving it to a timestamped backup or Recycle Bin. If Gradle/Lint files are locked, close Android Studio and stop only the identified Gradle/Kotlin daemon before retrying.
 
 ## Device startup debugging
 - `adb logcat | findstr /i "goauld python flutter serious"` on Windows.

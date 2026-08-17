@@ -1,0 +1,8 @@
+{
+  "memoryMode": "policy-only",
+  "memoryPolicyStyle": "custom",
+  "memoryPolicyCustomText": "<memory-policy>\nPersistent memory is available through memory_search and action-specific memory tools. Search it only when durable user, project, failure, correction, or tool context may materially affect the task. Treat retrieved memory as fallible context: current user instructions, repository files, and tool evidence win. Save only durable facts or corrections; never save task progress, secrets, or temporary state. Procedural learning is governed separately: do not mutate active skills with skill_manage; submit reusable procedures through skill_governor so they enter quarantine, review, and qualification.\n</memory-policy>",
+  "reviewEnabled": true,
+  "reviewTransport": "direct",
+  "standingInstructionsEnabled": true
+}

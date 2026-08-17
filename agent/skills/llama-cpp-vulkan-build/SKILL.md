@@ -1,76 +1,34 @@
 ---
-name: llama-cpp-vulkan-build
-description: Build llama.cpp from source on Windows 11 with Vulkan for AMD RDNA4 (RX 9070 XT / R9700) using Visual Studio 2026. Use this skill for ANY llama.cpp build, rebuild, daily-update, build error (MSB8066, xxd.cmake, WebUI, C2440/cpp-httplib/OpenSSL), CMake configuration, or HIP-vs-Vulkan question. Contains known-good commands and fixes for recurring failures.
+name: "llama-cpp-vulkan-build"
+description: "Build or repair llama.cpp on Pandaking Windows with Vulkan, VS 2026, and RDNA4. Use only for explicit llama.cpp configure/build failures or requested rebuilds; do not use for inference tuning, GGUF choice, Linux ROCm, or unrelated CMake projects."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: manual
+skill-governor-risk: high
+disable-model-invocation: true
 ---
+## When to Use
+Load manually for a requested llama.cpp Windows/Vulkan build, configure failure, MSBuild/WebUI problem, OpenSSL/cpp-httplib error, or backend build decision. The selected repository, desired targets, preservation requirements, and current upstream docs override this recipe.
 
-# llama.cpp Vulkan Build (Windows 11 / VS 2026 / RDNA4)
+## Procedure
+1. Confirm the exact repository/drive, Git status, current branch/ref, CMake version, VS generator, desired backend, and targets. Do not assume `C:\LAB` versus another lab tree.
+2. Preserve tracked and untracked user work. Never normalize `git reset --hard` or `git clean -fdx`; show any proposed cleanup separately and obtain approval. Prefer a new staging build directory.
+3. Configure with CMake >=4.2 and `-G "Visual Studio 18 2026" -A x64`. Start from Vulkan, static libs, ccache off, and only task-required optional components.
+4. Build the narrow targets first (`llama-server`, `llama-cli`, or `llama-bench` as requested) with `--parallel 20`.
+5. For WebUI/xxd/MSB8066 failures, identify the failing embed/npm step. Use `LLAMA_BUILD_WEBUI=OFF` only when an embedded UI is not an acceptance requirement.
+6. For cpp-httplib/OpenSSL qualifier failures, prefer supported CMake feature flags or an upstream/local reviewed patch; do not cast vendor code blindly. Reconfigure in a fresh build directory when cache flags changed.
+7. Use Ninja only from a VS 2026 native tools environment when the generator itself is the problem.
+8. Keep HIP on Windows opt-in and experimental for gfx1201; Vulkan remains the default. MXFP GGUF does not require a different backend.
 
-## Canonical incremental daily build
+## Pitfalls
+- Deleting the repository/build before a replacement passes can destroy the last-known-good binary or local work.
+- `LLAMA_CURL=OFF` alone may not disable cpp-httplib SSL compilation.
+- A stale CMake cache can preserve obsolete paths/flags.
+- Accepted CLI flags do not prove a fork applies them at runtime.
+- Device/KV/context tuning belongs in `amd-dual-gpu-inference`, not this build procedure.
 
-```powershell
-$ErrorActionPreference = "Stop"
-$repo = "C:\LAB\ai-local\llama.cpp"
-
-if (Test-Path $repo) {
-    cd $repo
-    git fetch --all --prune
-    git reset --hard origin/master
-    # wipe everything untracked EXCEPT webui node_modules (saves ~1 GB/day)
-    git clean -fdx -e tools/server/webui/node_modules
-} else {
-    cd C:\LAB\ai-local
-    git clone https://github.com/ggml-org/llama.cpp llama.cpp
-    cd $repo
-}
-
-cmake -B build `
-  -G "Visual Studio 18 2026" -A x64 `
-  -DGGML_VULKAN=ON `
-  -DGGML_NATIVE=ON `
-  -DBUILD_SHARED_LIBS=OFF `
-  -DCMAKE_BUILD_TYPE=Release `
-  -DGGML_CCACHE=OFF `
-  -DLLAMA_CURL=OFF
-
-cmake --build build --config Release --parallel 20 --target llama-server llama-cli llama-bench
-```
-
-Binaries land in `build\bin\Release\`.
-
-## Hard requirements
-- CMake >= 4.2 (older CMake does not know the `"Visual Studio 18 2026"` generator). Check `cmake --version`, update via `winget upgrade Kitware.CMake`, then open a NEW PowerShell session.
-- Do not use `"Visual Studio 17 2022"` — VS 2022 is not installed.
-- Building only the three targets above skips most WebUI pipeline fragility.
-
-## Known failure patterns and fixes
-
-### 1. WebUI / MSB8066 / xxd.cmake ("string sub-command LENGTH requires two arguments")
-The SvelteKit WebUI embed pipeline (index.html.hpp, bundle.js.hpp, ...) breaks periodically after upstream refactors, or when Node/Git-Bash aren't on PATH.
-- Fastest fix: build without embedded WebUI → add `-DLLAMA_BUILD_WEBUI=OFF` (warning about "building server without embedded WebUI" is then expected and fine).
-- If WebUI is wanted: ensure `node -v` >= 22 and `bash` resolves (Git Bash on PATH), delete `build/` fully, reconfigure.
-- MSB8065 stamp warnings are cosmetic; the real error is usually the xxd.cmake/npm step above it.
-
-### 2. C2440 "Conversion loses qualifiers" in vendor\cpp-httplib\httplib.cpp (~line 12511)
-Newer OpenSSL returns `const X509_NAME*`, cpp-httplib expects non-const. `-DLLAMA_CURL=OFF` alone does NOT prevent httplib compilation.
-- Preferred: disable SSL paths entirely: `-DLLAMA_OPENSSL=OFF -DGGML_OPENSSL=OFF -DCPPHTTPLIB_OPENSSL_SUPPORT=OFF`
-- Fallback: patch the line with an explicit C-style cast to `X509_NAME*`.
-- Always delete `build/` before reconfiguring so the CMake cache doesn't keep old flags.
-
-### 3. Generator/MSBuild flakiness
-Ninja is the robust alternative (single-config, drives cl.exe directly). Must run from an "x64 Native Tools Command Prompt for VS 2026":
-```powershell
-winget install Ninja-build.Ninja
-cmake -B build -G Ninja -DGGML_VULKAN=ON -DCMAKE_BUILD_TYPE=Release -DLLAMA_CURL=OFF
-cmake --build build --parallel 20
-```
-
-## HIP/ROCm on Windows for gfx1201 — default answer: don't
-- Vulkan is the reliable backend on this hardware/OS. HIP on gfx1201/Windows has known init failures ("has 2 ISAs...", CPU fallback) and broken rocWMMA-FA episodes.
-- MXFP4 GGUFs are a quant format, NOT a backend feature — they run on the Vulkan build with no extra flags.
-- If HIP is attempted anyway: Ninja + clang from `$env:HIP_PATH\bin`, `-DGGML_HIP=ON -DGPU_TARGETS=gfx1201` (`AMDGPU_TARGETS` is deprecated), leave `GGML_HIP_GRAPHS` and `GGML_HIP_ROCWMMA_FATTN` OFF until the bare build works.
-
-## Verification after build
-```powershell
-.\build\bin\Release\llama-bench.exe -m I:\models\<family>\<model>.gguf
-```
-Expected: three Vulkan devices (Vulkan0 = RX 9070 XT, Vulkan1 = R9700, Vulkan2 = Intel iGPU) and both AMD cards reporting `matrix cores: KHR_coopmat`. `warp size: 64` on the Windows proprietary driver is normal — see `amd-dual-gpu-inference`.
+## Verification
+1. CMake configure and the requested target build exit successfully; check native `$LASTEXITCODE` in PowerShell.
+2. Run `--version` or `--help` on only the newly built requested binaries.
+3. When backend/runtime behavior changed, run one focused real-model smoke or `llama-bench`; otherwise do not require a full model benchmark.
+4. Confirm no pre-existing tracked/untracked work was removed and the last-known-good output remains recoverable until acceptance.

@@ -19,6 +19,7 @@
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
     "allowJs": true,
     // Nothing is emitted; pi compiles at runtime.
     "noEmit": true

@@ -1,33 +1,30 @@
 ---
-name: cross-platform-macos-compat
-description: Write code that runs on Windows 11, Ubuntu, AND macOS. Consult when creating or reviewing Python tools, GUI apps (tkinter/CustomTkinter), launcher/shell scripts, subprocess handling, file paths, or install instructions - even if the request only mentions one OS. Shipped programs target all three platforms; macOS is the one that cannot be tested locally, so its pitfalls must be handled proactively.
+name: "cross-platform-macos-compat"
+description: "Keep shipped Python, GUI, launcher, subprocess, path, and packaging code compatible with Windows 11, Ubuntu, and macOS. Use for cross-platform deliverables; do not force macOS work onto platform-specific internal tools or one-OS maintenance tasks."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: low
 ---
+## When to Use
+Use when code or instructions are intended to ship on Windows, Linux, and macOS, especially Python applications, tkinter/Qt/Flet GUIs, launchers, subprocesses, paths, and packaging. Explicit target-platform requirements and repository CI are authoritative.
 
-# Cross-Platform Rules (Windows / Ubuntu / macOS)
+## Procedure
+1. Branch explicitly with `sys.platform` (`win32`, `linux`, `darwin`) where behavior differs; do not let macOS accidentally fall through to Linux behavior.
+2. Prefer `pathlib.Path`, `platformdirs`, argument-vector subprocesses with `shell=False`, and `shutil.which()` over platform shell assumptions.
+3. Use Windows process groups/`CTRL_BREAK_EVENT`; on POSIX use `SIGTERM`, then bounded `SIGKILL` fallback. Preserve existing shutdown contracts.
+4. Avoid GNU-only shell behavior on macOS (BSD `sed`, `date`, `stat`, and no guaranteed `grep -P`). Prefer Python for portable automation.
+5. For GUI code, add Command-key accelerators on Darwin, portable PNG icons, and a clear Tk availability error. Do not hard-code Windows fonts.
+6. Route GPU work by platform: Vulkan/ROCm/DirectML on supported AMD systems, Metal/MPS on macOS, CPU fallback when necessary. Never introduce CUDA-only requirements on Pandaking.
+7. Keep LF in portable text and add a `macos-latest` CI job when macOS behavior materially changes.
 
-Dev/test happens on Windows 11 + Ubuntu; **macOS cannot be tested locally**. Use platform-neutral APIs by default and gate every OS branch explicitly with `sys.platform` (`win32`/`linux`/`darwin`). Every Windows branch needs a deliberate darwin branch, not a fallthrough into the Linux path.
+## Pitfalls
+- Windows/macOS case-insensitive filesystems can hide case-collision bugs seen on Linux.
+- Rosetta Python and arm64 native libraries can fail in confusing ways.
+- Gatekeeper behavior belongs in release guidance, not in routine code changes.
+- Installing Homebrew/Tk or changing packaging dependencies requires task scope or user approval; it is not an automatic repair step.
 
-## Paths & filesystem
-- Always `pathlib.Path`; config/data dirs via `platformdirs` (Windows `%APPDATA%`, Linux XDG, macOS `~/Library/Application Support/<App>`).
-- Case sensitivity: Windows and macOS-APFS insensitive, Linux sensitive — compare via `normcase`, never create files differing only in case. Ignore `.DS_Store`.
-
-## Processes & shells
-- Portable shutdown: `win32` → `CTRL_BREAK_EVENT` (process started with `CREATE_NEW_PROCESS_GROUP`), else `SIGTERM` then `SIGKILL` after timeout.
-- `subprocess` with argument lists, never `shell=True`; find executables via `shutil.which()`.
-- macOS ships BSD userland (`sed -i ''`, no `grep -P`, different `date`/`stat`/`readlink`) — prefer Python over shelling out. Install docs use Homebrew. Call `python3`, shebang `#!/usr/bin/env python3`.
-
-## GUI (tkinter/CustomTkinter)
-- macOS system Tk is often broken → document `brew install python-tk`; verify at startup, fail with a clear message.
-- Bind `<Command-...>` accelerators additionally on darwin; `.ico` is Windows-only, provide `.png` via `iconphoto`; don't hardcode Segoe UI/Consolas fonts.
-
-## GPU / AI workloads
-- macOS has no Vulkan/ROCm/CUDA — GPU path is **Metal** (llama.cpp `-DGGML_METAL=ON`, PyTorch `mps`). Device-selection logic needs a darwin branch; AMD VRAM-sizing heuristics don't transfer (unified memory).
-- Pin wheels per arch (`platform.machine()`); Rosetta-x86 Python + arm64 native libs fails silently.
-
-## Packaging & distribution
-- Repo line endings LF (`.gitattributes: * text=auto eol=lf`), CRLF only for `.bat`/`.ps1`; POSIX scripts need shebang + `chmod +x`.
-- Gatekeeper blocks unsigned apps: document right-click → Open or `xattr -d com.apple.quarantine <file>`.
-- The only practical macOS test without a Mac: a `macos-latest` GitHub Actions job.
-
-## Review checklist
-Hardcoded paths/drive letters? Windows-only APIs without darwin branch (winreg, CTRL_BREAK, msvcrt)? GNU-tool shell-outs? `encoding="utf-8"` everywhere? GPU fallback to Metal/CPU? Install docs cover brew + python3?
+## Verification
+1. Run the smallest existing test/build for the changed path on the available OS.
+2. For platform branches, add or run focused mocked/platform-dispatch tests.
+3. Require macOS CI only when shipped macOS behavior changed; do not run a full cross-platform matrix for an unrelated local edit.

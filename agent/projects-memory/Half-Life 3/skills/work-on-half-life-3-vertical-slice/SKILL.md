@@ -1,10 +1,18 @@
 ---
 name: "work-on-half-life-3-vertical-slice"
-description: "Develop and verify the Half-Life 3 Borealis Signal browser vertical slice, including its expanded mountain level, combat audio, rendering, physics, and smoke gates."
-version: 4
 created: "2026-07-09"
-updated: "2026-07-24"
+description: "Develop and verify the Half-Life 3 Borealis Signal browser vertical slice, including its expanded mountain level, combat audio, rendering, physics, and smoke gates. Do not use for unrelated project work or to broaden a smaller task."
+version: 5
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## Governance
+Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+
+## When to Use
+Use for the Borealis Signal rendering, weapon/audio, mountain-level, physics, or matching smoke-test path. Select only the section corresponding to the requested change.
+
 ## Rendering pipeline
 Quality is controlled by `Renderer.setVideoProfile(quality)`.
 - `PostFX.ts`: `RenderPass → GTAOPass → UnrealBloomPass → Vignette ShaderPass → FXAA ShaderPass → OutputPass`. `OutputPass` stays last.
@@ -34,9 +42,6 @@ Quality is controlled by `Renderer.setVideoProfile(quality)`.
 - Keep exterior decoration instanced and shadow budgets bounded; do not replace the terrain with thousands of box colliders.
 - The tunnel mouth at z=-116 must blend to baseHeight. Exit trigger Y must contain `terrainHeight + 1.72`.
 
-## Project orchestration
-For HL3 work, the parent remains the boss. Run `teamleiter` explicitly on GPT-5.6 Terra; route all other subagents/workers/reviewers explicitly to `zai/glm-5.2` unless Basti changes the policy.
-
 ## Pitfalls
 - Live settings apply only in-game; before `bootstrap()` the active renderer/audio may be undefined.
 - Run `tools/extract_hl2_textures.py` from repo root. Never commit generated `public/assets/legacy_hl2/*`, `public/assets/pbr/`, or `public/assets/rtx/`.
@@ -48,15 +53,8 @@ For HL3 work, the parent remains the boss. Run `teamleiter` explicitly on GPT-5.
 - The simple enemy AI has no navmesh; keep exterior encounters in the central valley.
 
 ## Verification
-```bash
-npm run test:level
-npm run test:audio
-npm run build
-npm run analyze
-# Against a fresh preview on a dedicated port:
-SMOKE_URL=http://localhost:<port>/ node tools/check_404.mjs
-SMOKE_URL=http://localhost:<port>/ node tools/mountain_smoke.mjs
-```
-`mountain_smoke.mjs` must reach Surface, Ridge, and Exit, fire the exit checkpoint, report no console/page errors, and produce ignored screenshots in `tools/asset_import/hl3_smoke_*.png`.
-
-Manual smoke: HUD appears; WASD/Shift/Space/mouse work; weapons and gravity tool work; reactor puzzle remains at `[7,1.5,-10]`; the three new interior spaces are distinct; terrain/ruins do not visibly diverge from collision; free-roam stays within terrain bounds.
+1. Audio-only changes: run `npm run test:audio`.
+2. Level/physics changes: run `npm run test:level` plus a fresh-preview `mountain_smoke.mjs` on a dedicated `SMOKE_URL`.
+3. Rendering/build changes: run `npm run build`; add `npm run analyze` only when bundle/performance scope changed.
+4. Use `check_404.mjs` when routes/assets changed. Require the mountain smoke to reach only the checkpoints affected by the change and report no console/page errors.
+5. Perform the full manual controls, puzzle, interior, terrain/collision, and free-roam smoke only for cross-cutting gameplay/release work.

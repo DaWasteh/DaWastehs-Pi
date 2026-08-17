@@ -3,7 +3,6 @@ name: bugtester
 description: Führt klar begrenzte Bug-Reproduktionen und mechanische Regressionstests unter 128k Tokens aus.
 tools: read, grep, find, ls, bash
 model: openai-codex/gpt-5.3-codex-spark
-fallbackModels: llama-server=http://127.0.0.1:1234/local
 thinking: low
 systemPromptMode: replace
 inheritProjectContext: true

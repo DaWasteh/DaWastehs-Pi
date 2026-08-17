@@ -1,24 +1,32 @@
 ---
-name: windows-python-golden-rules
-description: "Modern Python 3.12+ rules on Windows 11 including uv, pathlib, async/process behavior, native wheels, and AMD GPU ML via ROCm/HIP or DirectML. Use whenever writing Python tools or local AI code on Windows."
+name: "windows-python-golden-rules"
+description: "Write modern Python 3.12+ for Windows paths, venvs, subprocess/multiprocessing, native wheels, and AMD GPU backends. Use for Windows Python/local-AI code; do not use for pure POSIX tasks, authorize package changes, or translate CUDA examples blindly."
+version: 2
+updated: "2026-08-17"
+skill-governor-tier: auto
+skill-governor-risk: medium
 ---
+## When to Use
+Use for Python code that runs on Windows, especially paths, subprocesses, multiprocessing, native wheels, GUI launchers, or AMD GPU ML. Explicit project Python/package policy and lockfiles override tool preferences.
 
-# Windows Python Golden Rules (3.12+ / AMD GPU)
+## Procedure
+1. Use the repository's existing environment manager; prefer per-project venvs and `pathlib.Path`. Do not install globally or replace lockfile versions without scope.
+2. Use Proactor-compatible async I/O and guard multiprocessing entry points for Windows spawn semantics.
+3. Treat free-threaded Python as opt-in only after native extensions are confirmed compatible.
+4. Use argument-vector subprocesses and process-group-aware Windows shutdown; load `powershell-windows-scripting` for launcher/console details.
+5. For native packages, diagnose wheel/ABI/toolchain compatibility before compiling or changing dependencies.
+6. On Pandaking, select ROCm/HIP, DirectML, Vulkan, or CPU deliberately. Never propose CUDA-only solutions; map tutorials to a supported backend or state incompatibility.
+7. Select the intended AMD device explicitly when the framework may choose the smaller GPU.
 
-## Environment
-- `uv` for packages/tools, `py` launcher for version selection, per-project venvs — never global site-packages.
-- `pathlib.Path` for paths; enable LongPaths and test >260-char paths.
-
-## Runtime rules
-- Async I/O uses the default Proactor loop. CPU-bound work: `multiprocessing` with spawn semantics — guard entry points with `if __name__ == "__main__"`.
-- Free-threaded Python (3.13t+) only after every C extension is confirmed no-GIL-safe.
-- Native packages need MSVC Build Tools. Defender can slow subprocess launches from temp dirs — keep build/cache dirs stable.
-- Shell/PATH/encoding quirks → `powershell-windows-scripting`.
-
-## ML / AMD GPU
-- **No CUDA on this machine.** Use ROCm/HIP, DirectML, Vulkan, or CPU; translate CUDA-only tutorials or reject them.
-- Device roles and llama.cpp flags → `amd-dual-gpu-inference`. Select devices deliberately (`HIP_VISIBLE_DEVICES`); defaults may not pick the 32 GB R9700.
-- DirectML (`torch-directml`, `onnxruntime-directml`) is the fallback when ROCm/HIP wheels don't cover the workload.
+## Pitfalls
+- Defender/temp directories can distort subprocess/build timings.
+- Windows path comparisons need normalized case; long paths need deliberate support.
+- ROCm/HIP wheel compatibility is workload/version-specific on Windows.
+- DirectML is a fallback with different operator/performance behavior, not a drop-in quality guarantee.
+- A package repair must not silently replace the custom AMD Torch stack.
 
 ## Verification
-Test suite runs in the intended venv/Python version; ML startup prints the selected backend/device and expected VRAM before model load.
+1. Run the smallest test/import/CLI smoke in the intended venv and Python version.
+2. For multiprocessing/subprocess changes, exercise the Windows spawn/shutdown path.
+3. For ML changes, print/verify backend, device identity, and expected memory before one focused model operation.
+4. Run broad environment/package checks only when dependencies or distribution changed.

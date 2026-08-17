@@ -1,0 +1,5476 @@
+[
+  {
+    "key": "comfyui-widget-only|forced-skill|1",
+    "caseId": "comfyui-widget-only",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "6ac77314156214ca4be504939a184d5ea283a8309019ee85623734018eed1065",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4925,
+    "usage": {
+      "input": 3557,
+      "output": 199,
+      "cacheRead": 6144,
+      "cacheWrite": 0,
+      "totalTokens": 9900,
+      "cost": 0.01008595
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|forced-skill|2",
+    "caseId": "comfyui-widget-only",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "6ac77314156214ca4be504939a184d5ea283a8309019ee85623734018eed1065",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6545,
+    "usage": {
+      "input": 3662,
+      "output": 188,
+      "cacheRead": 6016,
+      "cacheWrite": 0,
+      "totalTokens": 9866,
+      "cost": 0.0100933
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|forced-skill|3",
+    "caseId": "comfyui-widget-only",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "6ac77314156214ca4be504939a184d5ea283a8309019ee85623734018eed1065",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8886,
+    "usage": {
+      "input": 3570,
+      "output": 198,
+      "cacheRead": 6144,
+      "cacheWrite": 0,
+      "totalTokens": 9912,
+      "cost": 0.010094700000000002
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|no-skill|1",
+    "caseId": "comfyui-widget-only",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 3158,
+    "usage": {
+      "input": 2579,
+      "output": 180,
+      "cacheRead": 1152,
+      "cacheWrite": 0,
+      "totalTokens": 3911,
+      "cost": 0.007234849999999999
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|no-skill|2",
+    "caseId": "comfyui-widget-only",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4576,
+    "usage": {
+      "input": 2616,
+      "output": 203,
+      "cacheRead": 1152,
+      "cacheWrite": 0,
+      "totalTokens": 3971,
+      "cost": 0.007621599999999999
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|no-skill|3",
+    "caseId": "comfyui-widget-only",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7063,
+    "usage": {
+      "input": 2650,
+      "output": 217,
+      "cacheRead": 1152,
+      "cacheWrite": 0,
+      "totalTokens": 4019,
+      "cost": 0.0078771
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|v2.3|1",
+    "caseId": "comfyui-widget-only",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "4643dbdb79361197e94808fe4cbabcfd6556558b9b6c4c570c193b68b0c1fb44",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6745,
+    "usage": {
+      "input": 1654,
+      "output": 236,
+      "cacheRead": 11648,
+      "cacheWrite": 0,
+      "totalTokens": 13538,
+      "cost": 0.0082369
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|v2.3|2",
+    "caseId": "comfyui-widget-only",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "4643dbdb79361197e94808fe4cbabcfd6556558b9b6c4c570c193b68b0c1fb44",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8566,
+    "usage": {
+      "input": 4823,
+      "output": 204,
+      "cacheRead": 8448,
+      "cacheWrite": 0,
+      "totalTokens": 13475,
+      "cost": 0.012774650000000002
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|v2.3|3",
+    "caseId": "comfyui-widget-only",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "4643dbdb79361197e94808fe4cbabcfd6556558b9b6c4c570c193b68b0c1fb44",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 12691,
+    "usage": {
+      "input": 1708,
+      "output": 297,
+      "cacheRead": 11648,
+      "cacheWrite": 0,
+      "totalTokens": 13653,
+      "cost": 0.0091854
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|v2.4-routed|1",
+    "caseId": "comfyui-widget-only",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "d317915ae198a3e4510e8e0f0d5cfcdd9086ac83c5434939343ba0e79d2a917f",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4144,
+    "usage": {
+      "input": 1509,
+      "output": 201,
+      "cacheRead": 4608,
+      "cacheWrite": 0,
+      "totalTokens": 6318,
+      "cost": 0.00626115
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|v2.4-routed|2",
+    "caseId": "comfyui-widget-only",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "d317915ae198a3e4510e8e0f0d5cfcdd9086ac83c5434939343ba0e79d2a917f",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7854,
+    "usage": {
+      "input": 1535,
+      "output": 200,
+      "cacheRead": 4608,
+      "cacheWrite": 0,
+      "totalTokens": 6343,
+      "cost": 0.00629265
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "comfyui-widget-only|v2.4-routed|3",
+    "caseId": "comfyui-widget-only",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "d317915ae198a3e4510e8e0f0d5cfcdd9086ac83c5434939343ba0e79d2a917f",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-workflow",
+          "pass": true
+        },
+        {
+          "id": "valid-json",
+          "pass": true
+        },
+        {
+          "id": "single-widget-delta",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "workflow.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8416,
+    "usage": {
+      "input": 1656,
+      "output": 338,
+      "cacheRead": 4736,
+      "cacheWrite": 0,
+      "totalTokens": 6730,
+      "cost": 0.0084588
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|forced-skill|1",
+    "caseId": "exact-json-contract",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "f7682be3c37e53dce7c85a646bc35fa3c3cb704aa8861cffc2bb52ff275e6978",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4885,
+    "usage": {
+      "input": 3005,
+      "output": 272,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 10061,
+      "cost": 0.010253949999999998
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|forced-skill|2",
+    "caseId": "exact-json-contract",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "f7682be3c37e53dce7c85a646bc35fa3c3cb704aa8861cffc2bb52ff275e6978",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4340,
+    "usage": {
+      "input": 942,
+      "output": 254,
+      "cacheRead": 8832,
+      "cacheWrite": 0,
+      "totalTokens": 10028,
+      "cost": 0.0067501
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|forced-skill|3",
+    "caseId": "exact-json-contract",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "f7682be3c37e53dce7c85a646bc35fa3c3cb704aa8861cffc2bb52ff275e6978",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4448,
+    "usage": {
+      "input": 3019,
+      "output": 304,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 10107,
+      "cost": 0.01072645
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|no-skill|1",
+    "caseId": "exact-json-contract",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 10940,
+    "usage": {
+      "input": 2649,
+      "output": 293,
+      "cacheRead": 2176,
+      "cacheWrite": 0,
+      "totalTokens": 5118,
+      "cost": 0.00911855
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|no-skill|2",
+    "caseId": "exact-json-contract",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7052,
+    "usage": {
+      "input": 2617,
+      "output": 260,
+      "cacheRead": 2176,
+      "cacheWrite": 0,
+      "totalTokens": 5053,
+      "cost": 0.00860055
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|no-skill|3",
+    "caseId": "exact-json-contract",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4857,
+    "usage": {
+      "input": 2660,
+      "output": 317,
+      "cacheRead": 2176,
+      "cacheWrite": 0,
+      "totalTokens": 5153,
+      "cost": 0.0094738
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|v2.3|1",
+    "caseId": "exact-json-contract",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4966,
+    "usage": {
+      "input": 4177,
+      "output": 274,
+      "cacheRead": 10240,
+      "cacheWrite": 0,
+      "totalTokens": 14691,
+      "cost": 0.01293775
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|v2.3|2",
+    "caseId": "exact-json-contract",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 15679,
+    "usage": {
+      "input": 4191,
+      "output": 352,
+      "cacheRead": 10240,
+      "cacheWrite": 0,
+      "totalTokens": 14783,
+      "cost": 0.014054249999999999
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|v2.3|3",
+    "caseId": "exact-json-contract",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4852,
+    "usage": {
+      "input": 4126,
+      "output": 299,
+      "cacheRead": 10240,
+      "cacheWrite": 0,
+      "totalTokens": 14665,
+      "cost": 0.013198500000000002
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|v2.4-routed|1",
+    "caseId": "exact-json-contract",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e6e1822c4c3010b66e30b4b6e6faf390c2c9daf0a5c1297d620a109c7dec219c",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8520,
+    "usage": {
+      "input": 2359,
+      "output": 272,
+      "cacheRead": 4992,
+      "cacheWrite": 0,
+      "totalTokens": 7623,
+      "cost": 0.00880985
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|v2.4-routed|2",
+    "caseId": "exact-json-contract",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e6e1822c4c3010b66e30b4b6e6faf390c2c9daf0a5c1297d620a109c7dec219c",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6903,
+    "usage": {
+      "input": 1429,
+      "output": 331,
+      "cacheRead": 6016,
+      "cacheWrite": 0,
+      "totalTokens": 7776,
+      "cost": 0.00818755
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "exact-json-contract|v2.4-routed|3",
+    "caseId": "exact-json-contract",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e6e1822c4c3010b66e30b4b6e6faf390c2c9daf0a5c1297d620a109c7dec219c",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "json-valid",
+          "pass": true
+        },
+        {
+          "id": "exact-object",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "config/app.json"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6925,
+    "usage": {
+      "input": 1397,
+      "output": 309,
+      "cacheRead": 6016,
+      "cacheWrite": 0,
+      "totalTokens": 7722,
+      "cost": 0.00782355
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|forced-skill|1",
+    "caseId": "llama-log-diagnosis",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "936262e8c9a66da7cd0ab6818fa0e29fad88751e62ca4f307fa761b8b9907fa0",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5697,
+    "usage": {
+      "input": 3208,
+      "output": 430,
+      "cacheRead": 4864,
+      "cacheWrite": 0,
+      "totalTokens": 8502,
+      "cost": 0.012485199999999998
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|forced-skill|2",
+    "caseId": "llama-log-diagnosis",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "936262e8c9a66da7cd0ab6818fa0e29fad88751e62ca4f307fa761b8b9907fa0",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 24677,
+    "usage": {
+      "input": 3201,
+      "output": 399,
+      "cacheRead": 4864,
+      "cacheWrite": 0,
+      "totalTokens": 8464,
+      "cost": 0.01203895
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|forced-skill|3",
+    "caseId": "llama-log-diagnosis",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "936262e8c9a66da7cd0ab6818fa0e29fad88751e62ca4f307fa761b8b9907fa0",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 10936,
+    "usage": {
+      "input": 3240,
+      "output": 548,
+      "cacheRead": 4992,
+      "cacheWrite": 0,
+      "totalTokens": 8780,
+      "cost": 0.0142156
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|no-skill|1",
+    "caseId": "llama-log-diagnosis",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6216,
+    "usage": {
+      "input": 2684,
+      "output": 413,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4121,
+      "cost": 0.0106582
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|no-skill|2",
+    "caseId": "llama-log-diagnosis",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9081,
+    "usage": {
+      "input": 2987,
+      "output": 470,
+      "cacheRead": 2176,
+      "cacheWrite": 0,
+      "totalTokens": 5633,
+      "cost": 0.01218805
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|no-skill|3",
+    "caseId": "llama-log-diagnosis",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8350,
+    "usage": {
+      "input": 2605,
+      "output": 306,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 3935,
+      "cost": 0.009021949999999999
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|v2.3|1",
+    "caseId": "llama-log-diagnosis",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "99cc3f601fc6396eba0c5c845cb02e8dcf2a47ecaa6f63cfd05b3db070f6d7fe",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4918,
+    "usage": {
+      "input": 1458,
+      "output": 593,
+      "cacheRead": 10496,
+      "cacheWrite": 0,
+      "totalTokens": 12547,
+      "cost": 0.012690299999999998
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|v2.3|2",
+    "caseId": "llama-log-diagnosis",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "99cc3f601fc6396eba0c5c845cb02e8dcf2a47ecaa6f63cfd05b3db070f6d7fe",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5908,
+    "usage": {
+      "input": 1316,
+      "output": 438,
+      "cacheRead": 10496,
+      "cacheWrite": 0,
+      "totalTokens": 12250,
+      "cost": 0.010271799999999998
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|v2.3|3",
+    "caseId": "llama-log-diagnosis",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "99cc3f601fc6396eba0c5c845cb02e8dcf2a47ecaa6f63cfd05b3db070f6d7fe",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7472,
+    "usage": {
+      "input": 1359,
+      "output": 502,
+      "cacheRead": 10496,
+      "cacheWrite": 0,
+      "totalTokens": 12357,
+      "cost": 0.011243049999999997
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|v2.4-routed|1",
+    "caseId": "llama-log-diagnosis",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "f2b2b94b0ab49166bc3dc87700d0d193393b56238182e1d321a23347b6111a11",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7241,
+    "usage": {
+      "input": 1644,
+      "output": 578,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 6702,
+      "cost": 0.011753000000000001
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|v2.4-routed|2",
+    "caseId": "llama-log-diagnosis",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "f2b2b94b0ab49166bc3dc87700d0d193393b56238182e1d321a23347b6111a11",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7104,
+    "usage": {
+      "input": 2716,
+      "output": 649,
+      "cacheRead": 3456,
+      "cacheWrite": 0,
+      "totalTokens": 6821,
+      "cost": 0.0144438
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "llama-log-diagnosis|v2.4-routed|3",
+    "caseId": "llama-log-diagnosis",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "f2b2b94b0ab49166bc3dc87700d0d193393b56238182e1d321a23347b6111a11",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-report-added",
+          "pass": true
+        },
+        {
+          "id": "stage-identified",
+          "pass": true
+        },
+        {
+          "id": "conditional-disable",
+          "pass": true
+        },
+        {
+          "id": "two-options",
+          "pass": true
+        },
+        {
+          "id": "no-destructive-advice",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "diagnosis.md",
+        "logs/build.log"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5666,
+    "usage": {
+      "input": 1308,
+      "output": 357,
+      "cacheRead": 4608,
+      "cacheWrite": 0,
+      "totalTokens": 6273,
+      "cost": 0.0080934
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|forced-skill|1",
+    "caseId": "powershell-native-exit",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "292df5a99081d1e09d65548b0a21e27c6411bc1f2b139caf12683a67b614ad70",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5923,
+    "usage": {
+      "input": 3247,
+      "output": 589,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 8316,
+      "cost": 0.01471225
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|forced-skill|2",
+    "caseId": "powershell-native-exit",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "292df5a99081d1e09d65548b0a21e27c6411bc1f2b139caf12683a67b614ad70",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 16205,
+    "usage": {
+      "input": 3468,
+      "output": 800,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 8748,
+      "cost": 0.018053
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|forced-skill|3",
+    "caseId": "powershell-native-exit",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "292df5a99081d1e09d65548b0a21e27c6411bc1f2b139caf12683a67b614ad70",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 3198,
+    "usage": {
+      "input": 3014,
+      "output": 482,
+      "cacheRead": 4608,
+      "cacheWrite": 0,
+      "totalTokens": 8104,
+      "cost": 0.0128289
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|no-skill|1",
+    "caseId": "powershell-native-exit",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8903,
+    "usage": {
+      "input": 2806,
+      "output": 622,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4452,
+      "cost": 0.0137977
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|no-skill|2",
+    "caseId": "powershell-native-exit",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9195,
+    "usage": {
+      "input": 2789,
+      "output": 615,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4428,
+      "cost": 0.013669950000000002
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|no-skill|3",
+    "caseId": "powershell-native-exit",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5019,
+    "usage": {
+      "input": 3029,
+      "output": 824,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4877,
+      "cost": 0.017015950000000002
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|v2.3|1",
+    "caseId": "powershell-native-exit",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9833,
+    "usage": {
+      "input": 1201,
+      "output": 800,
+      "cacheRead": 9984,
+      "cacheWrite": 0,
+      "totalTokens": 11985,
+      "cost": 0.015048949999999998
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|v2.3|2",
+    "caseId": "powershell-native-exit",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5684,
+    "usage": {
+      "input": 4236,
+      "output": 644,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 11664,
+      "cost": 0.0176162
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|v2.3|3",
+    "caseId": "powershell-native-exit",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 10172,
+    "usage": {
+      "input": 1112,
+      "output": 538,
+      "cacheRead": 13824,
+      "cacheWrite": 0,
+      "totalTokens": 15474,
+      "cost": 0.0118972
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|v2.4-routed|1",
+    "caseId": "powershell-native-exit",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "ede9b6219bb679f5e496e784f2a5afac98edfaadfc65620a4325a2a0b4296299",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6591,
+    "usage": {
+      "input": 1465,
+      "output": 475,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 6420,
+      "cost": 0.00999775
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|v2.4-routed|2",
+    "caseId": "powershell-native-exit",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "ede9b6219bb679f5e496e784f2a5afac98edfaadfc65620a4325a2a0b4296299",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6879,
+    "usage": {
+      "input": 1582,
+      "output": 588,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 6650,
+      "cost": 0.0117845
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "powershell-native-exit|v2.4-routed|3",
+    "caseId": "powershell-native-exit",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "ede9b6219bb679f5e496e784f2a5afac98edfaadfc65620a4325a2a0b4296299",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "stop-preference",
+          "pass": true
+        },
+        {
+          "id": "cmake-preserved",
+          "pass": true
+        },
+        {
+          "id": "native-exit-checked",
+          "pass": true
+        },
+        {
+          "id": "messages-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "scripts/build.ps1"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4158,
+    "usage": {
+      "input": 1498,
+      "output": 486,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 6464,
+      "cost": 0.0102095
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|forced-skill|1",
+    "caseId": "release-notes-only",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "41d04acc06983afb5d69ba82919717163458cfe26b58bc1b3ea16ddbe8567d33",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7429,
+    "usage": {
+      "input": 3847,
+      "output": 662,
+      "cacheRead": 10240,
+      "cacheWrite": 0,
+      "totalTokens": 14749,
+      "cost": 0.01779225
+    },
+    "toolCalls": 4,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|forced-skill|2",
+    "caseId": "release-notes-only",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "41d04acc06983afb5d69ba82919717163458cfe26b58bc1b3ea16ddbe8567d33",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5542,
+    "usage": {
+      "input": 3301,
+      "output": 401,
+      "cacheRead": 7168,
+      "cacheWrite": 0,
+      "totalTokens": 10870,
+      "cost": 0.01264515
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|forced-skill|3",
+    "caseId": "release-notes-only",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "41d04acc06983afb5d69ba82919717163458cfe26b58bc1b3ea16ddbe8567d33",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9793,
+    "usage": {
+      "input": 3183,
+      "output": 359,
+      "cacheRead": 7168,
+      "cacheWrite": 0,
+      "totalTokens": 10710,
+      "cost": 0.01185065
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|no-skill|1",
+    "caseId": "release-notes-only",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7091,
+    "usage": {
+      "input": 2692,
+      "output": 443,
+      "cacheRead": 1152,
+      "cacheWrite": 0,
+      "totalTokens": 4287,
+      "cost": 0.011114599999999999
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|no-skill|2",
+    "caseId": "release-notes-only",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7074,
+    "usage": {
+      "input": 2774,
+      "output": 309,
+      "cacheRead": 2048,
+      "cacheWrite": 0,
+      "totalTokens": 5131,
+      "cost": 0.0095389
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|no-skill|3",
+    "caseId": "release-notes-only",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7292,
+    "usage": {
+      "input": 2765,
+      "output": 312,
+      "cacheRead": 2048,
+      "cacheWrite": 0,
+      "totalTokens": 5125,
+      "cost": 0.00956515
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|v2.3|1",
+    "caseId": "release-notes-only",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4761,
+    "usage": {
+      "input": 1031,
+      "output": 364,
+      "cacheRead": 13440,
+      "cacheWrite": 0,
+      "totalTokens": 14835,
+      "cost": 0.00925225
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|v2.3|2",
+    "caseId": "release-notes-only",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4848,
+    "usage": {
+      "input": 935,
+      "output": 267,
+      "cacheRead": 13440,
+      "cacheWrite": 0,
+      "totalTokens": 14642,
+      "cost": 0.00772625
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|v2.3|3",
+    "caseId": "release-notes-only",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5633,
+    "usage": {
+      "input": 949,
+      "output": 284,
+      "cacheRead": 13440,
+      "cacheWrite": 0,
+      "totalTokens": 14673,
+      "cost": 0.00798875
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|v2.4-routed|1",
+    "caseId": "release-notes-only",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "068516bf0430418e3a7b120bf30ee4ae6b6236a62ed73c6d40f8f35c3ee3006d",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5326,
+    "usage": {
+      "input": 1572,
+      "output": 412,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 6464,
+      "cost": 0.009303
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|v2.4-routed|2",
+    "caseId": "release-notes-only",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "068516bf0430418e3a7b120bf30ee4ae6b6236a62ed73c6d40f8f35c3ee3006d",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8697,
+    "usage": {
+      "input": 1493,
+      "output": 301,
+      "cacheRead": 6400,
+      "cacheWrite": 0,
+      "totalTokens": 8194,
+      "cost": 0.00794675
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "release-notes-only|v2.4-routed|3",
+    "caseId": "release-notes-only",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "068516bf0430418e3a7b120bf30ee4ae6b6236a62ed73c6d40f8f35c3ee3006d",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-notes-added",
+          "pass": true
+        },
+        {
+          "id": "version-title",
+          "pass": true
+        },
+        {
+          "id": "grounded-governance",
+          "pass": true
+        },
+        {
+          "id": "grounded-routing",
+          "pass": true
+        },
+        {
+          "id": "grounded-scope",
+          "pass": true
+        },
+        {
+          "id": "bounded-grounded-bullets",
+          "pass": true
+        },
+        {
+          "id": "no-fabricated-release",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "CHANGELOG.md",
+        "RELEASE_NOTES.md",
+        "diff-summary.txt"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4677,
+    "usage": {
+      "input": 962,
+      "output": 399,
+      "cacheRead": 5120,
+      "cacheWrite": 0,
+      "totalTokens": 6481,
+      "cost": 0.0081655
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|forced-skill|1",
+    "caseId": "targeted-html-accessibility",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "d9564abde0452d75d91b02b94d90dc3de998f22a3a0ae2edbd6a3b6b642ecf80",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6625,
+    "usage": {
+      "input": 2924,
+      "output": 473,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 7877,
+      "cost": 0.012523
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|forced-skill|2",
+    "caseId": "targeted-html-accessibility",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "d9564abde0452d75d91b02b94d90dc3de998f22a3a0ae2edbd6a3b6b642ecf80",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5098,
+    "usage": {
+      "input": 2864,
+      "output": 386,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 7730,
+      "cost": 0.011199999999999998
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|forced-skill|3",
+    "caseId": "targeted-html-accessibility",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "d9564abde0452d75d91b02b94d90dc3de998f22a3a0ae2edbd6a3b6b642ecf80",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8201,
+    "usage": {
+      "input": 886,
+      "output": 468,
+      "cacheRead": 6528,
+      "cacheWrite": 0,
+      "totalTokens": 7882,
+      "cost": 0.009244899999999999
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|no-skill|1",
+    "caseId": "targeted-html-accessibility",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 3559,
+    "usage": {
+      "input": 2871,
+      "output": 624,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4519,
+      "cost": 0.01393945
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|no-skill|2",
+    "caseId": "targeted-html-accessibility",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 11935,
+    "usage": {
+      "input": 2634,
+      "output": 390,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4048,
+      "cost": 0.0102487
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|no-skill|3",
+    "caseId": "targeted-html-accessibility",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6410,
+    "usage": {
+      "input": 2753,
+      "output": 512,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4289,
+      "cost": 0.01216495
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|v2.3|1",
+    "caseId": "targeted-html-accessibility",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5000,
+    "usage": {
+      "input": 4068,
+      "output": 396,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 11248,
+      "cost": 0.0138502
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|v2.3|2",
+    "caseId": "targeted-html-accessibility",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 11219,
+    "usage": {
+      "input": 4800,
+      "output": 707,
+      "cacheRead": 14592,
+      "cacheWrite": 0,
+      "totalTokens": 20099,
+      "cost": 0.020851599999999998
+    },
+    "toolCalls": 4,
+    "toolTypes": [
+      "read",
+      "edit",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|v2.3|3",
+    "caseId": "targeted-html-accessibility",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5038,
+    "usage": {
+      "input": 4106,
+      "output": 434,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 11324,
+      "cost": 0.0144487
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|v2.4-routed|1",
+    "caseId": "targeted-html-accessibility",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "07e2c704fc45b2b777359e5d11da0f3c58bd86fb273dd92abdf8baef1642f228",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7706,
+    "usage": {
+      "input": 2604,
+      "output": 522,
+      "cacheRead": 3456,
+      "cacheWrite": 0,
+      "totalTokens": 6582,
+      "cost": 0.0124698
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|v2.4-routed|2",
+    "caseId": "targeted-html-accessibility",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "07e2c704fc45b2b777359e5d11da0f3c58bd86fb273dd92abdf8baef1642f228",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7608,
+    "usage": {
+      "input": 3187,
+      "output": 656,
+      "cacheRead": 7680,
+      "cacheWrite": 0,
+      "totalTokens": 11523,
+      "cost": 0.01610525
+    },
+    "toolCalls": 4,
+    "toolTypes": [
+      "read",
+      "edit",
+      "write"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "targeted-html-accessibility|v2.4-routed|3",
+    "caseId": "targeted-html-accessibility",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "07e2c704fc45b2b777359e5d11da0f3c58bd86fb273dd92abdf8baef1642f228",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "lang-de",
+          "pass": true
+        },
+        {
+          "id": "main",
+          "pass": true
+        },
+        {
+          "id": "button",
+          "pass": true
+        },
+        {
+          "id": "no-clickable-div",
+          "pass": true
+        },
+        {
+          "id": "email-label",
+          "pass": true
+        },
+        {
+          "id": "title-preserved",
+          "pass": true
+        },
+        {
+          "id": "no-script-style",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "site/index.html"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4385,
+    "usage": {
+      "input": 1432,
+      "output": 350,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 6262,
+      "cost": 0.00819
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|forced-skill|1",
+    "caseId": "windows-cpp-handle",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1a4e15013e8a8f864b21e0a5d71a8363c9d80328ef86ee9c402c998b4ba9fe54",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 10640,
+    "usage": {
+      "input": 3008,
+      "output": 486,
+      "cacheRead": 4736,
+      "cacheWrite": 0,
+      "totalTokens": 8230,
+      "cost": 0.0128968
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|forced-skill|2",
+    "caseId": "windows-cpp-handle",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1a4e15013e8a8f864b21e0a5d71a8363c9d80328ef86ee9c402c998b4ba9fe54",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7956,
+    "usage": {
+      "input": 3149,
+      "output": 855,
+      "cacheRead": 4608,
+      "cacheWrite": 0,
+      "totalTokens": 8612,
+      "cost": 0.018287150000000002
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|forced-skill|3",
+    "caseId": "windows-cpp-handle",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1a4e15013e8a8f864b21e0a5d71a8363c9d80328ef86ee9c402c998b4ba9fe54",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 11867,
+    "usage": {
+      "input": 1058,
+      "output": 535,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 8377,
+      "cost": 0.0105287
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|no-skill|1",
+    "caseId": "windows-cpp-handle",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 13647,
+    "usage": {
+      "input": 3598,
+      "output": 899,
+      "cacheRead": 6272,
+      "cacheWrite": 0,
+      "totalTokens": 10769,
+      "cost": 0.0199801
+    },
+    "toolCalls": 5,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|no-skill|2",
+    "caseId": "windows-cpp-handle",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 11702,
+    "usage": {
+      "input": 3606,
+      "output": 1186,
+      "cacheRead": 2432,
+      "cacheWrite": 0,
+      "totalTokens": 7224,
+      "cost": 0.023340099999999996
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|no-skill|3",
+    "caseId": "windows-cpp-handle",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8224,
+    "usage": {
+      "input": 2663,
+      "output": 412,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4099,
+      "cost": 0.01060745
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|v2.3|1",
+    "caseId": "windows-cpp-handle",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9975,
+    "usage": {
+      "input": 932,
+      "output": 490,
+      "cacheRead": 9984,
+      "cacheWrite": 0,
+      "totalTokens": 11406,
+      "cost": 0.0102382
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|v2.3|2",
+    "caseId": "windows-cpp-handle",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4808,
+    "usage": {
+      "input": 4154,
+      "output": 514,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 11452,
+      "cost": 0.015652700000000002
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|v2.3|3",
+    "caseId": "windows-cpp-handle",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8411,
+    "usage": {
+      "input": 897,
+      "output": 419,
+      "cacheRead": 9984,
+      "cacheWrite": 0,
+      "totalTokens": 11300,
+      "cost": 0.00918295
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|v2.4-routed|1",
+    "caseId": "windows-cpp-handle",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "9976e0d5158728af8e33ed72500b3c3cfcb21495f5147daaeca7323d51fe59f2",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 11967,
+    "usage": {
+      "input": 1910,
+      "output": 601,
+      "cacheRead": 6400,
+      "cacheWrite": 0,
+      "totalTokens": 8911,
+      "cost": 0.0128765
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|v2.4-routed|2",
+    "caseId": "windows-cpp-handle",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "9976e0d5158728af8e33ed72500b3c3cfcb21495f5147daaeca7323d51fe59f2",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 20359,
+    "usage": {
+      "input": 1485,
+      "output": 909,
+      "cacheRead": 7296,
+      "cacheWrite": 0,
+      "totalTokens": 9690,
+      "cost": 0.01660155
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-cpp-handle|v2.4-routed|3",
+    "caseId": "windows-cpp-handle",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "9976e0d5158728af8e33ed72500b3c3cfcb21495f5147daaeca7323d51fe59f2",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-target-file",
+          "pass": true
+        },
+        {
+          "id": "wide-parameter",
+          "pass": true
+        },
+        {
+          "id": "wide-api",
+          "pass": true
+        },
+        {
+          "id": "handle-closed",
+          "pass": true
+        },
+        {
+          "id": "behavior-preserved",
+          "pass": true
+        }
+      ],
+      "actualFiles": [
+        "src/handle.cpp"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8315,
+    "usage": {
+      "input": 1896,
+      "output": 822,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 7198,
+      "cost": 0.01561
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|forced-skill|1",
+    "caseId": "windows-python-subprocess",
+    "condition": "forced-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "8427bb453e707a0b65b03edb94c8134b0c9abb103de776a4c4efc4a1a4019ff2",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 10182,
+    "usage": {
+      "input": 3064,
+      "output": 476,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 8020,
+      "cost": 0.01281
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|forced-skill|2",
+    "caseId": "windows-python-subprocess",
+    "condition": "forced-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "8427bb453e707a0b65b03edb94c8134b0c9abb103de776a4c4efc4a1a4019ff2",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5355,
+    "usage": {
+      "input": 3114,
+      "output": 575,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 8169,
+      "cost": 0.014283500000000001
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|forced-skill|3",
+    "caseId": "windows-python-subprocess",
+    "condition": "forced-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "8427bb453e707a0b65b03edb94c8134b0c9abb103de776a4c4efc4a1a4019ff2",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5746,
+    "usage": {
+      "input": 3020,
+      "output": 513,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 8013,
+      "cost": 0.013251
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|no-skill|1",
+    "caseId": "windows-python-subprocess",
+    "condition": "no-skill",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4681,
+    "usage": {
+      "input": 2845,
+      "output": 606,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4475,
+      "cost": 0.01364195
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|no-skill|2",
+    "caseId": "windows-python-subprocess",
+    "condition": "no-skill",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9084,
+    "usage": {
+      "input": 2826,
+      "output": 597,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4447,
+      "cost": 0.0134827
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|no-skill|3",
+    "caseId": "windows-python-subprocess",
+    "condition": "no-skill",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 7964,
+    "usage": {
+      "input": 2835,
+      "output": 600,
+      "cacheRead": 1024,
+      "cacheWrite": 0,
+      "totalTokens": 4459,
+      "cost": 0.013540449999999999
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|v2.3|1",
+    "caseId": "windows-python-subprocess",
+    "condition": "v2.3",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9713,
+    "usage": {
+      "input": 1005,
+      "output": 561,
+      "cacheRead": 9984,
+      "cacheWrite": 0,
+      "totalTokens": 11550,
+      "cost": 0.01135995
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|v2.3|2",
+    "caseId": "windows-python-subprocess",
+    "condition": "v2.3",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 4974,
+    "usage": {
+      "input": 4186,
+      "output": 541,
+      "cacheRead": 6784,
+      "cacheWrite": 0,
+      "totalTokens": 11511,
+      "cost": 0.0160867
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|v2.3|3",
+    "caseId": "windows-python-subprocess",
+    "condition": "v2.3",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "1794d15a44d3a36b2eeea7f72cd48d181698ad670e132c48e6710c696dd745a5",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 6499,
+    "usage": {
+      "input": 1276,
+      "output": 594,
+      "cacheRead": 13824,
+      "cacheWrite": 0,
+      "totalTokens": 15694,
+      "cost": 0.0129682
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|v2.4-routed|1",
+    "caseId": "windows-python-subprocess",
+    "condition": "v2.4-routed",
+    "replicate": 1,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "7376753bbb1d8f6b517156dfb00d6b323e25a7dcad636e7eea727d309a5ba9d7",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 8752,
+    "usage": {
+      "input": 2610,
+      "output": 538,
+      "cacheRead": 3456,
+      "cacheWrite": 0,
+      "totalTokens": 6604,
+      "cost": 0.012704299999999998
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|v2.4-routed|2",
+    "caseId": "windows-python-subprocess",
+    "condition": "v2.4-routed",
+    "replicate": 2,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "7376753bbb1d8f6b517156dfb00d6b323e25a7dcad636e7eea727d309a5ba9d7",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 9840,
+    "usage": {
+      "input": 1736,
+      "output": 519,
+      "cacheRead": 6656,
+      "cacheWrite": 0,
+      "totalTokens": 8911,
+      "cost": 0.011468800000000001
+    },
+    "toolCalls": 3,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  },
+  {
+    "key": "windows-python-subprocess|v2.4-routed|3",
+    "caseId": "windows-python-subprocess",
+    "condition": "v2.4-routed",
+    "replicate": 3,
+    "model": "openai-codex/gpt-5.3-codex-spark",
+    "thinking": "low",
+    "piVersion": "0.84.2",
+    "harnessHash": "2e7a057e05cd0af9ba189e7a3f4532dd3010917bfac711d6a1408964761b3d5c",
+    "skillCorpusHash": "7376753bbb1d8f6b517156dfb00d6b323e25a7dcad636e7eea727d309a5ba9d7",
+    "passed": true,
+    "verification": {
+      "passed": true,
+      "checks": [
+        {
+          "id": "only-source-file",
+          "pass": true
+        },
+        {
+          "id": "pathlib",
+          "pass": true
+        },
+        {
+          "id": "no-shell-true",
+          "pass": true
+        },
+        {
+          "id": "argument-list",
+          "pass": true
+        },
+        {
+          "id": "runtime-probe",
+          "pass": true,
+          "detail": ""
+        }
+      ],
+      "actualFiles": [
+        "app/path_report.py"
+      ]
+    },
+    "violations": [],
+    "elapsedMs": 5156,
+    "usage": {
+      "input": 1559,
+      "output": 505,
+      "cacheRead": 4480,
+      "cacheWrite": 0,
+      "totalTokens": 6544,
+      "cost": 0.01058225
+    },
+    "toolCalls": 2,
+    "toolTypes": [
+      "read",
+      "edit"
+    ],
+    "skillReads": []
+  }
+]
