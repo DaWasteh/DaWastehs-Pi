@@ -9,7 +9,84 @@ const ALARM_VOLUME = 30;
 const ALARM_TIMEOUT_MS = 30_000;
 const USER_INPUT_TOOL_NAMES = new Set(["ask_user_question"]);
 
-type AlarmReason = "user-input" | "agent-complete" | "manual-test";
+type AlarmReason = "user-input" | "confirmation" | "agent-complete" | "manual-test";
+
+type DialogUI = {
+  confirm(title: string, message: string, options?: unknown): Promise<boolean>;
+  select(title: string, options: string[], dialogOptions?: unknown): Promise<string | undefined>;
+};
+
+type DialogAlarmState = {
+  originalConfirm: DialogUI["confirm"];
+  originalSelect: DialogUI["select"];
+  onOpen: (reason: AlarmReason) => void;
+  onClose: (reason: AlarmReason) => void;
+  wrappedConfirm?: DialogUI["confirm"];
+  wrappedSelect?: DialogUI["select"];
+};
+
+const DIALOG_ALARM_STATE = Symbol.for("pi.alarm-sound.dialog-wrapper.v1");
+
+export function selectionNeedsAttention(title: string, options: string[]): boolean {
+  const normalizedOptions = options.map((option) => option.trim().toLowerCase());
+  const hasAllow = normalizedOptions.some((option) => /^(?:yes|ja|allow|approve|authorize|trust|continue|run|zulassen|erlauben|vertrauen|fortfahren|ausführen)/.test(option));
+  const hasDeny = normalizedOptions.some((option) => /^(?:no|nein|deny|decline|cancel|do\s+not\s+trust|abbrechen|ablehnen|nicht\s+vertrauen|block)/.test(option));
+  if (!hasAllow || !hasDeny) return false;
+  return /(?:permission|approval|authorize|allow|danger|destructive|delete|remove|install|trust|sandbox|mcp|freigab|zulassen|erlaub|gefähr|risiko|löschen|entfern|installier|vertrau)/i.test(title);
+}
+
+export function installDialogAlarm(
+  ui: DialogUI,
+  onOpen: (reason: AlarmReason) => void,
+  onClose: (reason: AlarmReason) => void,
+): void {
+  const target = ui as DialogUI & { [DIALOG_ALARM_STATE]?: DialogAlarmState };
+  const existing = target[DIALOG_ALARM_STATE];
+  if (existing) {
+    existing.onOpen = onOpen;
+    existing.onClose = onClose;
+    return;
+  }
+
+  const state: DialogAlarmState = {
+    originalConfirm: ui.confirm.bind(ui),
+    originalSelect: ui.select.bind(ui),
+    onOpen,
+    onClose,
+  };
+  target[DIALOG_ALARM_STATE] = state;
+
+  state.wrappedConfirm = async (title, message, options) => {
+    state.onOpen("confirmation");
+    try {
+      return await state.originalConfirm(title, message, options);
+    } finally {
+      state.onClose("confirmation");
+    }
+  };
+  state.wrappedSelect = async (title, options, dialogOptions) => {
+    if (!selectionNeedsAttention(title, options)) {
+      return state.originalSelect(title, options, dialogOptions);
+    }
+    state.onOpen("confirmation");
+    try {
+      return await state.originalSelect(title, options, dialogOptions);
+    } finally {
+      state.onClose("confirmation");
+    }
+  };
+  target.confirm = state.wrappedConfirm;
+  target.select = state.wrappedSelect;
+}
+
+export function uninstallDialogAlarm(ui: DialogUI): void {
+  const target = ui as DialogUI & { [DIALOG_ALARM_STATE]?: DialogAlarmState };
+  const state = target[DIALOG_ALARM_STATE];
+  if (!state) return;
+  if (target.confirm === state.wrappedConfirm) target.confirm = state.originalConfirm;
+  if (target.select === state.wrappedSelect) target.select = state.originalSelect;
+  delete target[DIALOG_ALARM_STATE];
+}
 
 let alarmProcess: ChildProcess | null = null;
 let activeAlarmReason: AlarmReason | null = null;
@@ -156,6 +233,7 @@ function startFfplayOrFallback(reason: AlarmReason): void {
 
 function playAlarm(reason: AlarmReason): void {
   if (!alarmEnabled) return;
+  if (activeAlarmReason === reason && alarmProcess && !alarmProcess.killed) return;
 
   stopAlarm();
   activeAlarmReason = reason;
@@ -216,6 +294,24 @@ function shouldPlayForAgentEnd(event: AgentEndEvent): boolean {
 }
 
 export default function (pi: ExtensionAPI) {
+  const installForContext = (ctx: unknown) => {
+    const candidate = ctx as { mode?: string; hasUI?: boolean; ui?: Partial<DialogUI> };
+    if (!candidate.hasUI || !candidate.ui || typeof candidate.ui.confirm !== "function" || typeof candidate.ui.select !== "function") return;
+    installDialogAlarm(candidate.ui as DialogUI, playAlarm, stopAlarm);
+  };
+
+  const unsubscribeAttention = pi.events?.on?.("pi:user-attention-required", () => playAlarm("user-input"));
+  const unsubscribeResolved = pi.events?.on?.("pi:user-attention-resolved", () => stopAlarm("user-input"));
+
+  pi.on("project_trust", async (_event, ctx) => {
+    installForContext(ctx);
+    return { trusted: "undecided" as const };
+  });
+
+  pi.on("session_start", async (_event, ctx) => {
+    installForContext(ctx);
+  });
+
   pi.on("agent_start", async (_event, ctx) => {
     // Neuer Low-Level-Lauf → laufenden Sound stoppen und Abschlussstatus zurücksetzen.
     lastAgentRunCompleted = false;
@@ -252,12 +348,18 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  pi.on("session_shutdown", async () => {
+  pi.on("session_shutdown", async (_event, ctx) => {
     stopAlarm();
+    const candidate = ctx as { ui?: Partial<DialogUI> };
+    if (candidate.ui && typeof candidate.ui.confirm === "function" && typeof candidate.ui.select === "function") {
+      uninstallDialogAlarm(candidate.ui as DialogUI);
+    }
+    unsubscribeAttention?.();
+    unsubscribeResolved?.();
   });
 
   pi.registerCommand("alarm-sounds", {
-    description: "Alarm-Sound aktivieren/deaktivieren/testen (on/off/test)",
+    description: "Alarm-Sound aktivieren/deaktivieren/testen/prüfen (on/off/test/status)",
     handler: async (args, ctx) => {
       const arg = args.trim().toLowerCase();
 
@@ -274,9 +376,14 @@ export default function (pi: ExtensionAPI) {
           lastAlarmError ? `Alarm-Test konnte nicht starten: ${lastAlarmError}` : "Alarm-Test gestartet",
           lastAlarmError ? "error" : "info",
         );
+      } else if (arg === "status") {
+        ctx.ui.notify(
+          `Alarm: ${alarmEnabled ? "aktiv" : "aus"}; Wiedergabe: ${activeAlarmReason ?? "inaktiv"}${lastAlarmError ? `; letzter Fehler: ${lastAlarmError}` : ""}`,
+          lastAlarmError ? "warning" : "info",
+        );
       } else {
         ctx.ui.notify(
-          `Nutzung: /alarm-sounds on|off|test (aktuell: ${alarmEnabled ? "on" : "off"})`,
+          `Nutzung: /alarm-sounds on|off|test|status (aktuell: ${alarmEnabled ? "on" : "off"})`,
           "warning",
         );
       }

@@ -16,6 +16,9 @@ const extensionContext = {
     async confirm() {
       throw new Error("Unexpected confirmation in extension test");
     },
+    async select() {
+      throw new Error("Unexpected selection in extension test");
+    },
     notify() {},
     setStatus() {},
   },
@@ -41,7 +44,7 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
 
     assert.deepEqual(
       [...alarmHandlers.keys()],
-      ["agent_start", "tool_execution_start", "tool_execution_end", "agent_end", "agent_settled", "session_shutdown"],
+      ["project_trust", "session_start", "agent_start", "tool_execution_start", "tool_execution_end", "agent_end", "agent_settled", "session_shutdown"],
     );
     assert.ok(alarmCommands.has("alarm-sounds"));
 
@@ -56,6 +59,7 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
 
     const updateTools = new Map();
     const updateCommands = new Map();
+    const updateHandlers = new Map();
     let execCalls = 0;
 
     // Prove the tracked npm postinstall hook can repair a clean vulnerable
@@ -74,8 +78,30 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
     assert.equal(fixturePatch.changed, true);
     assert.match(await readFile(fixtureExecutorPath, "utf8"), /const workflowRunId = randomUUID\(\);/);
 
+    const heimdallPath = join(temporaryAgentDir, "heimdall.json");
+    const driftedSandbox = process.platform !== "linux";
+    await writeFile(heimdallPath, JSON.stringify({ sandbox: { enabled: driftedSandbox } }), "utf8");
     const updateModule = await import("../extensions/pi-autoupdate.ts");
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Bitte Pi und die Extensions aktualisieren."), { scope: "all", force: false });
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Bitte nur die Extensions aktualisieren."), { scope: "extensions", force: false });
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Bitte Pi neu installieren und das erzwingen."), { scope: "self", force: true });
+    assert.equal(updateModule.parsePiUpdateAuthorization('Erkläre, ob "update Pi" sicher ist.'), null);
+    assert.equal(updateModule.parsePiUpdateAuthorization("Repeat 'update Pi' exactly."), null);
+    assert.equal(updateModule.parsePiUpdateAuthorization("The agent can update Pi."), null);
+    assert.equal(updateModule.parsePiUpdateAuthorization("Should I update Pi?"), null);
+    assert.equal(updateModule.parsePiUpdateAuthorization("Please explain whether to update Pi."), null);
+    assert.equal(updateModule.parsePiUpdateAuthorization("I am not asking you to update Pi."), null);
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Update packages, but not Pi."), { scope: "extensions", force: false });
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Update Pi, not extensions."), { scope: "self", force: false });
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Update Pi, but don't force it."), { scope: "self", force: false });
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Update Pi, no force."), { scope: "self", force: false });
+    assert.deepEqual(updateModule.parsePiUpdateAuthorization("Update packages, excluding Pi."), { scope: "extensions", force: false });
+    assert.equal(updateModule.hasExplicitPiUpdateIntent("Bitte Pi nicht aktualisieren."), false);
+    assert.equal(updateModule.updateAuthorizationAllows({ scope: "extensions", force: false }, "all", false), false);
+    assert.equal(updateModule.updateAuthorizationAllows({ scope: "all", force: false }, "self", false), true);
+    assert.equal(updateModule.updateAuthorizationAllows({ scope: "self", force: false }, "self", true), false);
     await updateModule.default({
+      on(name, handler) { updateHandlers.set(name, handler); },
       registerTool(definition) {
         updateTools.set(definition.name, definition);
       },
@@ -91,6 +117,8 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
     const updateTool = updateTools.get("pi_update");
     assert.ok(updateTool);
     assert.ok(updateCommands.has("update"));
+    assert.ok(updateHandlers.has("input"));
+    assert.deepEqual(JSON.parse(await readFile(heimdallPath, "utf8")), { sandbox: { enabled: driftedSandbox } });
     assert.deepEqual(updateTool.parameters.properties.scope.enum, ["all", "self", "extensions"]);
     assert.equal(updateTool.parameters.properties.scope.anyOf, undefined);
 
@@ -106,6 +134,16 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
       ),
       /test-cancel/,
     );
+    assert.equal(execCalls, 0);
+    await assert.rejects(
+      updateTool.execute("unauthorized", { scope: "self", confirm: false }, undefined, undefined, extensionContext),
+      /does not authorize scope='self'/,
+    );
+    await assert.rejects(
+      updateTool.execute("prompt-bypass", { scope: "all", confirm: true }, undefined, undefined, extensionContext),
+      /does not authorize scope='all'/,
+    );
+    await updateCommands.get("update").handler("chek", extensionContext);
     assert.equal(execCalls, 0);
 
     // The recovery patch must remain inside finally and run before lock release.
@@ -124,6 +162,9 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
     assert.ok((source.match(/const result = process\.platform === "win32"/g) ?? []).length >= 2);
     assert.match(source, /function isSafeNpmPackageName\(name: string\)/);
     assert.match(source, /encodeURIComponent\(pkgName\)/);
+    assert.equal((source.match(/ctx\.ui\.confirm/g) ?? []).length, 0, "Updater authority must not fall back to technical confirmation popups");
+    const startupPolicy = source.slice(source.indexOf("Startup is intentionally"), source.indexOf("async function ensurePostUpdatePackagePatches"));
+    assert.doesNotMatch(startupPolicy, /await ensure(?:Heimdall|PiSubagents)/);
 
     // A live nonce-bearing updater lock cannot be stolen on age alone, while
     // native two-line pi-intercom spawn locks retain their upstream lease.
@@ -133,7 +174,7 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
     // Pi 0.84 tool-call ids can contain `|`; the updater must preserve the
     // package patch that decouples async workflow directory ids from them.
     assert.match(source, /async function patchPiSubagentsAsyncWorkflowId/);
-    assert.match(source, /await ensurePiSubagentsAsyncWorkflowIdPatch\(process\.cwd\(\)\)/);
+    assert.match(source, /const subagents = await ensurePiSubagentsAsyncWorkflowIdPatch\(cwd\)/);
     const runtimePackage = JSON.parse(await readFile(new URL("../npm/package.json", import.meta.url), "utf8"));
     assert.equal(runtimePackage.scripts.postinstall, "node patches/postinstall.cjs");
   } finally {
@@ -141,6 +182,34 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
     else process.env.PI_CODING_AGENT_DIR = previousAgentDir;
     await rm(temporaryAgentDir, { recursive: true, force: true });
   }
+});
+
+test("Alarm wrapper rings for confirmations and permission selectors without wrapping normal menus twice", async () => {
+  const { installDialogAlarm, selectionNeedsAttention, uninstallDialogAlarm } = await import("../extensions/alarm-sound.ts");
+  const events = [];
+  const calls = [];
+  const ui = {
+    async confirm(title) { calls.push(`confirm:${title}`); return true; },
+    async select(title, options) { calls.push(`select:${title}`); return options[0]; },
+  };
+  installDialogAlarm(ui, (reason) => events.push(`open:${reason}`), (reason) => events.push(`close:${reason}`));
+  assert.equal(await ui.confirm("Freigabe", "Fortfahren?"), true);
+  assert.equal(await ui.select("Choose model", ["A", "B"]), "A");
+  assert.equal(await ui.select("MCP permission", ["Allow once", "Deny"]), "Allow once");
+  assert.deepEqual(events, ["open:confirmation", "close:confirmation", "open:confirmation", "close:confirmation"]);
+  assert.deepEqual(calls, ["confirm:Freigabe", "select:Choose model", "select:MCP permission"]);
+  assert.equal(selectionNeedsAttention("Choose model", ["A", "B"]), false);
+  assert.equal(selectionNeedsAttention("RTK command zulassen?", ["Ja", "Nein"]), true);
+  assert.equal(selectionNeedsAttention("Trust project folder?", ["Trust", "Trust (this session only)", "Do not trust"]), true);
+
+  const secondEvents = [];
+  installDialogAlarm(ui, (reason) => secondEvents.push(`open:${reason}`), (reason) => secondEvents.push(`close:${reason}`));
+  await ui.confirm("Overwrite?", "Replace file?");
+  assert.deepEqual(secondEvents, ["open:confirmation", "close:confirmation"]);
+  uninstallDialogAlarm(ui);
+  secondEvents.length = 0;
+  await ui.confirm("After shutdown", "No wrapper remains");
+  assert.deepEqual(secondEvents, []);
 });
 
 test("Stargate header remains width-safe and reuses its protocol image", async () => {

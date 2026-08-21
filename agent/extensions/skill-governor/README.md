@@ -12,8 +12,9 @@ critic, and evidence gates.
 
 - Task-route at most `routing.maxAutoSkills` automatic descriptions with a
   positive lexical score.
-- Keep unmatched automatic skills available through `skill_route`; require UI
-  approval for manual/canary bodies.
+- Keep unmatched automatic skills available through `skill_route`. Manual and
+  canary bodies may be read without a popup because reading instructions is not
+  permission to execute their consequential actions.
 - Remove `skill_manage` from active model tools and block direct mutations.
 - Store generated candidates outside all Pi skill-discovery roots.
 - Require distinct recurrent observations before automatic generation.
@@ -45,8 +46,15 @@ array. Every record must match the current candidate digest:
 }
 ```
 
-Authority actions remain slash commands with confirmation. Promotion,
-retirement, and rollback reload Pi resources after durable state changes.
+Authority actions remain explicit user slash commands, without a redundant
+technical yes/no popup. Incomplete active promotion fails closed unless the user
+repeats the command with `--override`. Promotion, retirement, and rollback reload
+Pi resources after durable state changes.
+
+The low-noise permission policy automatically allows read-only inspection,
+allows governed edits only when the user's natural-language request explicitly
+asks to change the skill/guard architecture, and blocks unrequested destructive
+shell commands without asking the user to interpret them.
 
 ## Security boundary
 

@@ -37,8 +37,9 @@ tool.
 From `agent/`:
 
 ```bash
-node benchmarks/skill-governor/run.mjs --runs 3
-node benchmarks/skill-governor/report.mjs
+npm run skill:bench
+npm run skill:probe
+npm run skill:report
 ```
 
 The default is 8 cases × 4 conditions × 3 repeats = 96 model runs using
@@ -51,15 +52,19 @@ Useful bounded commands:
 
 ```bash
 # Validate fixture constructors/verifiers without a model call
-node benchmarks/skill-governor/run.mjs --dry-run
+npm run skill:bench -- --dry-run
 
 # One smoke case/condition
-node benchmarks/skill-governor/run.mjs \
+npm run skill:bench -- \
   --runs 1 \
   --cases exact-json-contract \
   --conditions no-skill \
   --output benchmarks/skill-governor/results/smoke.jsonl
 ```
+
+The npm scripts are also the preferred invocation under the live governor: the
+benchmark directory happens to contain the word `skill-governor`, while it is
+not itself mutable governor state.
 
 Raw results and failed fixture copies stay under the ignored `results/` path.
 The generated aggregate report is written to

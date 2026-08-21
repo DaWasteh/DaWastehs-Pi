@@ -56,7 +56,7 @@ import type {
 const MUTATING_SKILL_ACTIONS = new Set(["create", "patch", "update", "edit", "delete"]);
 const SKILL_BLOCK_PATTERN = /(?:\n\nThe following skills provide specialized instructions[\s\S]*?(?=<available_skills>))?<available_skills>[\s\S]*?<\/available_skills>/g;
 const GOVERNANCE_BLOCK_PATTERN = /\n?<skill-governance>[\s\S]*?<\/skill-governance>\n?/g;
-const AGENT_MUTATION_COMMAND = /(?:\b(?:cp|mv|rm|del|rmdir|move|copy|set-content|out-file|add-content|tee|git\s+apply)\b|(?:python|node)\s+(?:-c|-e)\b|powershell(?:\.exe)?\b[^\n]*(?:-command|-encodedcommand)|(?:>|>>)\s*[^&|])/i;
+const AGENT_MUTATION_COMMAND = /(?:\b(?:cp|mv|rm|del|rmdir|move|copy|touch|mkdir|new-item|set-content|out-file|add-content|tee|patch|sed\s+-i|perl\s+-pi)\b|\bgit\b[^\n;&|]{0,120}\b(?:apply|checkout|restore)\b|(?:python|node)\s+(?:-c|-e)\b|powershell(?:\.exe)?\b[^\n]*(?:-command|-encodedcommand)|(?:>|>>)\s*[^&|])/i;
 const DANGEROUS_COMMAND_PATTERNS: Array<[string, RegExp]> = [
   ["destructive Git cleanup", /\bgit\s+(?:clean\s+-[^\n;&|]*[fdx]|reset\s+--hard)\b/i],
   ["recursive deletion", /\b(?:rm\s+-rf|rmdir\s+\/s|del\s+\/[sq])\b|remove-item\b[^\n;&|]*-recurse/i],
@@ -156,6 +156,203 @@ function routeScore(query: string, skill: CachedSkill): number {
   return scoreSkillForPrompt(query, skill.snapshot.skill.name, skill.snapshot.skill.description);
 }
 
+export type GovernanceAuthorityScope = "skill-files" | "governor-runtime" | "alarm-extension" | "update-extension";
+
+export interface GovernanceAuthorization {
+  scopes: GovernanceAuthorityScope[];
+}
+
+function stripQuotedExamples(value: string): string {
+  return value.replace(/"[^"\n]*"|`[^`\n]*`|‘[^’\n]*’|'[^'\n]{2,}'/g, " ");
+}
+
+function directRequestClauses(value: string, action: RegExp): string[] {
+  const directCue = /^(?:please\b|bitte\b|can\s+you\b|could\s+you\b|kannst\s+du\b|können\s+wir\b|ich\s+möchte(?:,?\s+dass\s+du)?\b|i\s+want\s+you\s+to\b|wenn\s+alles(?:\s+dann)?\s+(?:passt|grün\s+ist|erfolgreich\s+ist)\s*,?\s*bitte\b)/i;
+  const metaLead = /^(?:repeat|quote|explain|document|analy[sz]e|discuss|describe|should\s+i|erklär\w*|dokumentier\w*|analysier\w*|diskutier\w*|beschreib\w*|wiederhol\w*|zitiere?\b)/i;
+  return stripQuotedExamples(value).split(/(?<!\d)\.(?!\d)|[!?\n;]+/).map((part) => part.trim()).filter((part) => {
+    const withoutPolitePrefix = part.replace(/^(?:please|bitte|can\s+you|could\s+you|kannst\s+du|können\s+wir)\s+/i, "");
+    if (!part || metaLead.test(withoutPolitePrefix)) return false;
+    action.lastIndex = 0;
+    const startsWithAction = action.exec(withoutPolitePrefix)?.index === 0;
+    action.lastIndex = 0;
+    return action.test(part) && (directCue.test(part) || startsWithAction);
+  });
+}
+
+function hasNegatedGovernanceAction(value: string): boolean {
+  const negation = String.raw`(?:do\s+not|don['’]?t|not|never|without|nicht|niemals|kein(?:e|en|er|es)?|ohne|weder)`;
+  const action = String.raw`(?:change|edit|update|improve|fix|repair|refactor|änder(?:n|e|t)|bearbeit(?:en|e|et)|aktualisier(?:en|e|t)|verbesser(?:n|e|t)|fix(?:en|e|t)|reparier(?:en|e|t)|überarbeit(?:en|e|et)|anpass(?:en|e|t))`;
+  const subject = String.raw`(?:skill|skills|skill-governor|governor|guard|guards|alarm|alarms|soundalarm|pi-autoupdate|updater)`;
+  const pattern = String.raw`\b${negation}\b[^.!?\n]{0,60}\b(?:${action})\b[^.!?\n]{0,40}\b(?:${subject})\b|\b${negation}\b[^.!?\n]{0,60}\b(?:${subject})\b[^.!?\n]{0,40}\b(?:${action})\b|\b(?:${subject})\b[^.!?\n]{0,40}\b${negation}\b[^.!?\n]{0,40}\b(?:${action})\b`;
+  return new RegExp(pattern, "i").test(value);
+}
+
+function clauseExcludes(clause: string, subject: RegExp): boolean {
+  const exclusion = String.raw`(?:no|not|without|except|excluding|skip|do\s+not|don['’]?t|nicht|ohne|außer|kein(?:e|en|er|es)?)`;
+  return new RegExp(String.raw`\b${exclusion}\b[^,;]{0,35}(?:${subject.source})`, "i").test(clause);
+}
+
+export function parseGovernanceAuthorization(value: string): GovernanceAuthorization | null {
+  const action = /\b(?:change|edit|update|improve|fix|repair|refactor|harden|rework|änder(?:n|e|t)|bearbeit(?:en|e|et)|aktualisier(?:en|e|t)|verbesser(?:n|e|t)|fix(?:en|e|t)|reparier(?:en|e|t)|härt(?:en|e|et)|überarbeit(?:en|e|et)|anpass(?:en|e|t))\b/i;
+  const scopes = new Set<GovernanceAuthorityScope>();
+  for (const clause of directRequestClauses(value, action)) {
+    if (hasNegatedGovernanceAction(clause)) continue;
+    const skillSubject = /\b(?:skill|skills)\b/i;
+    const governorSubject = /\b(?:skill-governor|governor|guard|guards)\b/i;
+    const alarmSubject = /\b(?:alarm|alarms|soundalarm)\b/i;
+    const updaterSubject = /\b(?:pi-autoupdate|update-extension|updater)\b/i;
+    if (skillSubject.test(clause) && !clauseExcludes(clause, skillSubject)) scopes.add("skill-files");
+    if (governorSubject.test(clause) && !clauseExcludes(clause, governorSubject)) scopes.add("governor-runtime");
+    if (alarmSubject.test(clause) && !clauseExcludes(clause, alarmSubject)) scopes.add("alarm-extension");
+    if (updaterSubject.test(clause) && !clauseExcludes(clause, updaterSubject)) scopes.add("update-extension");
+  }
+  return scopes.size > 0 ? { scopes: [...scopes] } : null;
+}
+
+export function hasExplicitGovernanceMutationIntent(value: string): boolean {
+  return parseGovernanceAuthorization(value) !== null;
+}
+
+export type ConsequentialAuthority = "git-commit" | "git-push" | "git-tag" | "package-publish" | "deploy";
+
+export function parseConsequentialAuthorization(value: string): ConsequentialAuthority[] {
+  const action = /\b(?:commit|push|tag|publish|release|deploy|committen|pushen|taggen|veröffentlichen)\b/i;
+  const scopes = new Set<ConsequentialAuthority>();
+  for (const clause of directRequestClauses(value, action)) {
+    if (/\b(?:do\s+not|don['’]?t|not|never|without|nicht|niemals|kein(?:e|en|er|es)?|ohne|weder|refuse\s+to)\b[^,]{0,50}\b(?:commit|push|tag|publish|release|deploy|committen|pushen|taggen|veröffentlichen)\b/i.test(clause)) continue;
+    const commitAction = /\b(?:commit|committen)\b/i;
+    const pushAction = /\b(?:push|pushen)\b/i;
+    const tagAction = /\b(?:tag|taggen)\b/i;
+    const publishAction = /\b(?:publish|release|veröffentlichen)\b/i;
+    const deployAction = /\bdeploy\b/i;
+    if (commitAction.test(clause) && !clauseExcludes(clause, commitAction)) scopes.add("git-commit");
+    if (pushAction.test(clause) && !clauseExcludes(clause, pushAction)) scopes.add("git-push");
+    if (tagAction.test(clause) && !clauseExcludes(clause, tagAction)) scopes.add("git-tag");
+    if (publishAction.test(clause) && !clauseExcludes(clause, publishAction)) scopes.add("package-publish");
+    if (deployAction.test(clause) && !clauseExcludes(clause, deployAction)) scopes.add("deploy");
+  }
+  return [...scopes];
+}
+
+function splitShellSegments(command: string): string[] {
+  const segments: string[] = [];
+  let current = "";
+  let quote: "'" | '"' | null = null;
+  let escaped = false;
+  const flush = () => { if (current.trim()) segments.push(current.trim()); current = ""; };
+  for (let index = 0; index < command.length; index++) {
+    const char = command[index]!;
+    if (escaped) { current += char; escaped = false; continue; }
+    if (char === "\\" && quote !== "'") { current += char; escaped = true; continue; }
+    if (quote) { current += char; if (char === quote) quote = null; continue; }
+    if (char === "'" || char === '"') { quote = char; current += char; continue; }
+    if (char === "\n" || char === ";" || char === "|" || char === "&") {
+      flush();
+      if ((char === "|" || char === "&") && command[index + 1] === char) index++;
+      continue;
+    }
+    current += char;
+  }
+  flush();
+  return segments;
+}
+
+function shellTokens(segment: string): string[] {
+  const matches = segment.match(/"(?:\\.|[^"\\])*"|'[^']*'|[^\s]+/g) ?? [];
+  return matches.map((token) => {
+    const trimmed = token.replace(/^[({!]+|[)}]+$/g, "");
+    if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) return trimmed.slice(1, -1);
+    return trimmed.replace(/\\(["'\\\\\\s])/g, "$1");
+  }).filter(Boolean);
+}
+
+function commandBase(value: string): string {
+  return value.replace(/\\/g, "/").split("/").pop()!.toLowerCase().replace(/\.(?:exe|cmd|bat)$/i, "");
+}
+
+export function classifyHighRiskShellCommand(command: string): string[] {
+  const findings = new Set<string>();
+  const inspect = (source: string, depth = 0) => {
+    if (depth > 3) { findings.add("ambiguous nested shell command"); return; }
+    for (const segment of splitShellSegments(source)) {
+      const tokens = shellTokens(segment);
+      let index = 0;
+      while (commandBase(tokens[index] ?? "") === "rtk") index++;
+      while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[index] ?? "")) index++;
+      while (["command", "env"].includes(commandBase(tokens[index] ?? ""))) {
+        index++;
+        while ((tokens[index] ?? "").startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[index] ?? "")) index++;
+      }
+      const base = commandBase(tokens[index] ?? "");
+      const args = tokens.slice(index + 1);
+      if (!base) continue;
+      if (["bash", "sh", "zsh", "cmd", "powershell", "pwsh"].includes(base)) {
+        const flagIndex = args.findIndex((arg) => ["-c", "-command", "/c"].includes(arg.toLowerCase()));
+        if (flagIndex >= 0 && args[flagIndex + 1]) inspect(args.slice(flagIndex + 1).join(" "), depth + 1);
+      }
+      if (["sudo", "runas"].includes(base)) findings.add("privilege escalation");
+      if (base === "git") {
+        let cursor = 0;
+        while (cursor < args.length && args[cursor]!.startsWith("-")) {
+          cursor += ["-c", "--git-dir", "--work-tree"].includes(args[cursor]!.toLowerCase()) ? 2 : 1;
+        }
+        const subcommand = (args[cursor] ?? "").toLowerCase();
+        const tail = args.slice(cursor + 1).map((arg) => arg.toLowerCase());
+        if (subcommand === "reset" && tail.includes("--hard")) findings.add("destructive Git cleanup");
+        if (subcommand === "clean") {
+          const flags = tail.filter((arg) => arg.startsWith("-")).join("");
+          if (flags.includes("f") && (flags.includes("d") || flags.includes("x"))) findings.add("destructive Git cleanup");
+        }
+        if ((subcommand === "checkout" || subcommand === "restore") && tail.some((arg) => arg === "." || arg === "--")) findings.add("destructive Git cleanup");
+        if (subcommand === "push") findings.add("git-push");
+        if (subcommand === "commit") findings.add("git-commit");
+        if (subcommand === "tag" && !tail.some((arg) => ["-l", "--list"].includes(arg))) findings.add("git-tag");
+      }
+      if (base === "rm") {
+        const flags = args.filter((arg) => arg.startsWith("-")).join("").toLowerCase();
+        if (flags.includes("r") && flags.includes("f")) findings.add("recursive deletion");
+      }
+      if ((base === "rmdir" && args.some((arg) => /^[/ -]s$/i.test(arg)))
+        || (base === "del" && args.some((arg) => /^[/ -][sq]$/i.test(arg)))
+        || (base === "remove-item" && args.some((arg) => /^-(?:recurse|r)$/i.test(arg)))) findings.add("recursive deletion");
+      if (["npm", "pnpm", "yarn", "bun"].includes(base)) {
+        let managerCursor = 0;
+        const optionsWithValue = new Set(["--prefix", "--workspace", "-w", "--filter", "--cwd", "--dir", "-c"]);
+        while (managerCursor < args.length && args[managerCursor]!.startsWith("-")) {
+          managerCursor += optionsWithValue.has(args[managerCursor]!.toLowerCase()) ? 2 : 1;
+        }
+        if ((args[managerCursor] ?? "").toLowerCase() === "workspace") managerCursor += 2;
+        const action = (args[managerCursor] ?? "").toLowerCase();
+        const script = (args[managerCursor + 1] ?? "").toLowerCase();
+        if (["install", "i", "add", "update", "upgrade", "uninstall", "remove", "rm"].includes(action)) {
+          findings.add("dependency mutation");
+          if (args.some((arg) => ["-g", "--global"].includes(arg.toLowerCase()))) findings.add("global package/toolchain mutation");
+        }
+        if (base === "npm" && action === "publish") findings.add("package-publish");
+        if (["run", "run-script"].includes(action) && /^(?:deploy|release|publish)$/.test(script)) findings.add(script === "deploy" ? "deploy" : "package-publish");
+      }
+      if (base === "uv") {
+        const action = (args[0] ?? "").toLowerCase();
+        if (["add", "remove", "sync", "lock"].includes(action) || (action === "pip" && ["install", "uninstall"].includes((args[1] ?? "").toLowerCase()))) findings.add("dependency mutation");
+      }
+      if ((base === "pip" || (base === "python" && args[0] === "-m" && args[1] === "pip")) && args.includes("install")) {
+        findings.add("dependency mutation");
+        if (args.includes("--user")) findings.add("global package/toolchain mutation");
+      }
+      if (base === "pipx" && ["install", "upgrade", "uninstall"].includes((args[0] ?? "").toLowerCase())) {
+        findings.add("dependency mutation");
+        findings.add("global package/toolchain mutation");
+      }
+      if (base === "gh" && (args[0] ?? "").toLowerCase() === "release") findings.add("package-publish");
+      if (/^(?:deploy|vercel|netlify)$/.test(base)) findings.add("deploy");
+      if (["winget", "choco", "scoop", "brew", "apt", "apt-get", "cargo"].includes(base)
+        && ["install", "upgrade", "update", "uninstall", "remove"].includes((args[0] ?? "").toLowerCase())) findings.add("global package/toolchain mutation");
+    }
+  };
+  inspect(command);
+  return [...findings];
+}
+
 function evolutionErrorCode(error: unknown): string {
   const message = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
   if (message.includes("cross-provider")) return "cross-provider-disabled";
@@ -250,8 +447,24 @@ export default function skillGovernor(pi: ExtensionAPI): void {
   let lastAssistantSummary = "";
   let lastProjectName: string | undefined;
   let evolutionInProgress = false;
+  let governanceAuthorization: GovernanceAuthorization | null = null;
+  let consequentialAuthorization = new Set<ConsequentialAuthority>();
   const approvedSkillReads = new Set<string>();
   const approvedWrites = new Set<string>();
+
+  const governedTargetScope = (absolute: string, canonical = absolute): GovernanceAuthorityScope | undefined => {
+    const values = [normalizePath(absolute), normalizePath(canonical)];
+    const inside = (root: string) => values.some((value) => isWithin(value, root));
+    if (inside(join(paths.agentDir, "skills"))
+      || values.some((value) => value.includes("/projects-memory/") && value.includes("/skills/"))
+      || inside(join(paths.agentDir, "pi-hermes-memory", "skills"))) return "skill-files";
+    if (inside(join(paths.agentDir, "extensions", "skill-governor")) || inside(paths.root)) return "governor-runtime";
+    if (values.includes(normalizePath(join(paths.agentDir, "extensions", "alarm-sound.ts")))) return "alarm-extension";
+    if (values.includes(normalizePath(join(paths.agentDir, "extensions", "pi-autoupdate.ts")))) return "update-extension";
+    return undefined;
+  };
+
+  const hasAuthorityFor = (scope: GovernanceAuthorityScope) => governanceAuthorization?.scopes.includes(scope) === true;
 
   const refreshToolVisibility = () => {
     if (!config?.enabled) return;
@@ -571,6 +784,8 @@ export default function skillGovernor(pi: ExtensionAPI): void {
     if (event.source !== "extension") {
       observation = emptyObservation();
       observation.userPrompt = event.text;
+      governanceAuthorization = parseGovernanceAuthorization(event.text);
+      consequentialAuthorization = new Set(parseConsequentialAuthorization(event.text));
       lastAssistantSummary = "";
     }
     return { action: "continue" };
@@ -599,7 +814,7 @@ export default function skillGovernor(pi: ExtensionAPI): void {
         if (cached?.snapshot.tier === "manual" && !approvedSkillReads.delete(normalized)) {
           return {
             block: true,
-            reason: `Skill '${cached.snapshot.skill.name}' is manual/canary. Use skill_route(action='load', name='${cached.snapshot.skill.name}') for explicit approval, or invoke /skill:${cached.snapshot.skill.name} yourself.`,
+            reason: `Skill '${cached.snapshot.skill.name}' is manual/canary. Use skill_route(action='load', name='${cached.snapshot.skill.name}'); loading its text is read-only and does not authorize its actions.`,
           };
         }
         observation.skillReads.add(cached?.snapshot.skill.name ?? normalized);
@@ -611,42 +826,30 @@ export default function skillGovernor(pi: ExtensionAPI): void {
       const absolute = absoluteFrom(path, ctx.cwd);
       const canonical = await canonicalTarget(absolute);
       const normalized = normalizePath(canonical);
-      const projectRoot = normalizePath(join(paths.agentDir, "projects-memory"));
-      const lexicalProjectSkill = normalizePath(absolute).includes(`${projectRoot}/`) && normalizePath(absolute).includes("/skills/");
-      const canonicalProjectSkill = normalizePath(canonical).includes(`${projectRoot}/`) && normalizePath(canonical).includes("/skills/");
-      const cachedSkillTarget = cachedByPath.has(normalizePath(absolute)) || cachedByPath.has(normalizePath(canonical));
-      const protectedPath = cachedSkillTarget
-        || isWithin(absolute, join(paths.agentDir, "skills"))
-        || isWithin(canonical, join(paths.agentDir, "skills"))
-        || lexicalProjectSkill
-        || canonicalProjectSkill
-        || isWithin(absolute, join(paths.agentDir, "pi-hermes-memory", "skills"))
-        || isWithin(canonical, join(paths.agentDir, "pi-hermes-memory", "skills"))
-        || isWithin(absolute, join(paths.agentDir, "extensions", "skill-governor"))
-        || isWithin(canonical, join(paths.agentDir, "extensions", "skill-governor"))
-        || isWithin(absolute, paths.root)
-        || isWithin(canonical, paths.root);
-      if (config.protectActiveSkillFiles && protectedPath && !approvedWrites.delete(normalized)) {
-        return {
-          block: true,
-          reason: "Governed skill/governor files cannot be changed by ordinary edit/write calls. Use the governor candidate/promotion flow or ask the user to run /skill-governor allow-write <exact-path>.",
-        };
+      const targetScope = governedTargetScope(absolute, canonical);
+      if (config.protectActiveSkillFiles && targetScope) {
+        const oneShotApproved = approvedWrites.delete(normalized);
+        if (!oneShotApproved && !hasAuthorityFor(targetScope)) {
+          return {
+            block: true,
+            reason: `Security-sensitive ${targetScope} mutation was blocked automatically; no user yes/no decision is needed. Continue only after a direct, scope-matching natural-language request or an exact /skill-governor allow-write command.`,
+          };
+        }
+        if (!oneShotApproved) {
+          await appendEvidence(paths, { type: "explicit_user_authority", action: "governed-write", targetScope, pathHash: sha256(normalized) }).catch(() => undefined);
+        }
       }
       observation.changedFiles.add(path);
     }
 
     if (!["read", "write", "edit", "bash", "skill_manage", "skill_route", "skill_governor"].includes(event.toolName)) {
       for (const value of collectInputStrings(event.input)) {
-        if (!/[\\/]|skill\.md/i.test(value)) continue;
+        if (!/[\\/]|(?:skill\.md|alarm-sound\.ts|pi-autoupdate\.ts|(?:index|policy|store|llm|types)\.ts)$/i.test(value)) continue;
         const absolute = absoluteFrom(value, ctx.cwd);
         const canonical = await canonicalTarget(absolute);
-        const targetsSkill = cachedByPath.has(normalizePath(absolute))
-          || cachedByPath.has(normalizePath(canonical))
-          || isWithin(absolute, join(paths.agentDir, "skills"))
-          || isWithin(canonical, join(paths.agentDir, "skills"))
-          || (normalizePath(absolute).includes("/projects-memory/") && normalizePath(absolute).includes("/skills/"));
-        if (targetsSkill) {
-          return { block: true, reason: `Tool '${event.toolName}' cannot access governed skill paths; use read/skill_route or the confirmed governor lifecycle.` };
+        const targetScope = governedTargetScope(absolute, canonical);
+        if (targetScope) {
+          return { block: true, reason: `Tool '${event.toolName}' cannot access security-sensitive ${targetScope} paths; use read/edit/write or the governed lifecycle.` };
         }
       }
     }
@@ -655,21 +858,46 @@ export default function skillGovernor(pi: ExtensionAPI): void {
       const command = String((event.input as { command?: unknown }).command ?? "");
       observation.commands.push(safeCommandSummary(command));
       const cwdInsideAgent = isWithin(ctx.cwd, paths.agentDir);
-      const mentionsRelativeGovernedPath = cwdInsideAgent
-        && /(?:^|[\s"'=])(skills|projects-memory|skill-governor)(?:[\\/]|\b)/i.test(command);
-      const touchesGovernedPath = /skill-governor|(?:\.pi[\\/]agent|agent)[\\/]skills|projects-memory[^\n;&|]*[\\/]skills/i.test(command)
-        || mentionsRelativeGovernedPath
-        || (cwdInsideAgent && AGENT_MUTATION_COMMAND.test(command));
-      if (config.protectActiveSkillFiles && touchesGovernedPath) {
-        if (!ctx.hasUI || !await ctx.ui.confirm("Governed skill mutation", `Allow this command once?\n\n${command.slice(0, 1200)}`)) {
-          return { block: true, reason: "Command may mutate governed skill state and was not approved." };
+      const mentionedScopes = new Set<GovernanceAuthorityScope>();
+      const cwdScope = governedTargetScope(ctx.cwd);
+      if (cwdScope) mentionedScopes.add(cwdScope);
+      for (const segment of splitShellSegments(command)) {
+        for (const token of shellTokens(segment)) {
+          const cleaned = token.replace(/^['"]|['"]$/g, "");
+          if (!/[\\/]|(?:alarm-sound\.ts|pi-autoupdate\.ts|(?:index|policy|store|llm|types)\.ts)$/i.test(cleaned)) continue;
+          const absolute = absoluteFrom(cleaned, ctx.cwd);
+          const scope = governedTargetScope(absolute, await canonicalTarget(absolute));
+          if (scope) mentionedScopes.add(scope);
         }
       }
-      for (const [label, pattern] of DANGEROUS_COMMAND_PATTERNS) {
-        if (!pattern.test(command)) continue;
-        if (!ctx.hasUI || !await ctx.ui.confirm("High-risk command", `Allow ${label} once?\n\n${command.slice(0, 1200)}`)) {
-          return { block: true, reason: `${label} was blocked because explicit approval was not granted.` };
+      const mentions = (pattern: RegExp) => pattern.test(command);
+      if (mentions(/skill-governor/i)) mentionedScopes.add("governor-runtime");
+      if (mentions(/alarm-sound\.ts/i)) mentionedScopes.add("alarm-extension");
+      if (mentions(/pi-autoupdate\.ts/i)) mentionedScopes.add("update-extension");
+      if (mentions(/(?:\.pi[\\/]agent|agent)[\\/]skills|projects-memory[^\n;&|]*[\\/]skills/i)
+        || (cwdInsideAgent && /(?:^|[\s"'=])(skills|projects-memory)(?:[\\/]|\b)/i.test(command))) mentionedScopes.add("skill-files");
+      const scriptWithSensitiveTarget = mentionedScopes.size > 0 && /\b(?:python|node|powershell|pwsh|bash|sh|cmd)(?:\.exe)?\b/i.test(command);
+      const mutatesGovernedPath = mentionedScopes.size > 0 && (AGENT_MUTATION_COMMAND.test(command) || scriptWithSensitiveTarget);
+      if (config.protectActiveSkillFiles && mutatesGovernedPath) {
+        const missing = [...mentionedScopes].filter((scope) => !hasAuthorityFor(scope));
+        if (missing.length > 0) {
+          return {
+            block: true,
+            reason: `Shell mutation of security-sensitive ${missing.join(", ")} files was blocked automatically; do not ask the user to approve the raw command. Use typed edit/write after a direct scope-matching request.`,
+          };
         }
+        await appendEvidence(paths, { type: "explicit_user_authority", action: "governed-shell-mutation", targetScopes: [...mentionedScopes], commandHash: sha256(command) }).catch(() => undefined);
+      }
+      for (const label of classifyHighRiskShellCommand(command)) {
+        const explicitlyAuthorized = consequentialAuthorization.has(label as ConsequentialAuthority);
+        if (explicitlyAuthorized) {
+          await appendEvidence(paths, { type: "explicit_user_authority", action: label, commandHash: sha256(command) }).catch(() => undefined);
+          continue;
+        }
+        return {
+          block: true,
+          reason: `${label} was blocked automatically; no technical yes/no prompt is needed. Use a safer dedicated tool, or continue only after a direct scope-matching user request.`,
+        };
       }
     }
   });
@@ -710,10 +938,10 @@ export default function skillGovernor(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "skill_route",
     label: "Skill Route",
-    description: "Search governed skills and, with approval, lazy-load a manual/canary skill. Use only when a hidden specialized procedure is needed; ordinary auto skills are already listed.",
-    promptSnippet: "Search or approve-load governed manual skills when a hidden specialized procedure is needed",
+    description: "Search and lazy-load governed manual/canary instructions. Loading text is read-only and never authorizes the actions it describes; actual consequential actions remain separately guarded.",
+    promptSnippet: "Search or read governed manual skills when a hidden specialized procedure is needed",
     promptGuidelines: [
-      "Use skill_route only for a concrete hidden capability; do not load broad release, install, destructive, or audit workflows for routine tasks.",
+      "Use skill_route only for a concrete hidden capability. Loading a skill body is read-only; never treat it as permission to run release, install, destructive, or broad validation actions.",
     ],
     parameters: Type.Object({
       action: StringEnum(["search", "load"] as const),
@@ -752,9 +980,6 @@ export default function skillGovernor(pi: ExtensionAPI): void {
           details: { name, path: selected.snapshot.skill.filePath, tier: selected.snapshot.tier, risk: selected.snapshot.risk },
         };
       }
-      if (!ctx.hasUI || !await ctx.ui.confirm("Load manual skill?", `${name} [${selected.snapshot.risk}]\n\n${selected.snapshot.skill.description}`)) {
-        throw new Error(`Manual skill '${name}' was not approved.`);
-      }
       approvedSkillReads.add(selected.normalizedPath);
       observation.skillReads.add(name);
       const text = selected.text || await readFile(selected.snapshot.skill.filePath, "utf8");
@@ -768,7 +993,7 @@ export default function skillGovernor(pi: ExtensionAPI): void {
   pi.registerTool({
     name: "skill_governor",
     label: "Skill Governor",
-    description: "Audit skills or propose a quarantined reusable procedure. This tool cannot directly activate, retire, delete, or overwrite a skill; those authority actions are user-confirmed slash commands.",
+    description: "Audit skills or propose a quarantined reusable procedure. This tool cannot activate, retire, delete, or overwrite a skill; those authority actions require an explicit user slash command, not a technical yes/no popup.",
     promptSnippet: "Audit skills and submit reusable procedures to quarantine",
     promptGuidelines: [
       "Use skill_governor propose instead of skill_manage mutations; proposals remain quarantined until independent criticism and qualification.",
@@ -903,7 +1128,6 @@ export default function skillGovernor(pi: ExtensionAPI): void {
         try { payload = JSON.parse(await readFile(evidencePath, "utf8")); }
         catch (error) { ctx.ui.notify(`Invalid evidence file: ${evolutionErrorCode(error)}`, "error"); return; }
         const records = Array.isArray(payload) ? payload : [payload];
-        if (!await ctx.ui.confirm("Import paired evidence?", `${records.length} record(s) for ${loaded.manifest.name}\n${evidencePath}`)) return;
         let manifest = loaded.manifest;
         try {
           manifest = await addPairedEvidenceBatch(paths, manifest, records as PairedEvidence[]);
@@ -923,15 +1147,18 @@ export default function skillGovernor(pi: ExtensionAPI): void {
         return;
       }
       if (action === "promote") {
-        const [id, tierRaw = "canary"] = rest;
+        const override = rest.includes("--override");
+        const [id, tierRaw = "canary"] = rest.filter((item) => item !== "--override");
         const tier = tierRaw === "active" ? "active" : "canary";
         const loaded = id ? await loadCandidate(paths, id) : null;
-        if (!loaded) { ctx.ui.notify("Usage: /skill-governor promote <candidate-id> [canary|active]", "error"); return; }
+        if (!loaded) { ctx.ui.notify("Usage: /skill-governor promote <candidate-id> [canary|active] [--override]", "error"); return; }
         if (tier === "active") {
           const qualification = activeEvidenceQualifies(loaded.manifest, config);
-          if (!qualification.ok && !await ctx.ui.confirm("Qualification incomplete", `${qualification.reason}\n\nPromote manually anyway?`)) return;
+          if (!qualification.ok && !override) {
+            ctx.ui.notify(`Activation blocked: ${qualification.reason}\nTo deliberately bypass this gate, run the same command with --override.`, "warning");
+            return;
+          }
         }
-        if (!await ctx.ui.confirm("Promote skill?", `${loaded.manifest.name} → ${tier}\nRisk: ${loaded.manifest.risk}`)) return;
         const target = activeSkillPath(paths, loaded.manifest, tier);
         const promoted = await withFileMutationQueue(target, () => promoteCandidate(paths, loaded.manifest, tier));
         ctx.ui.notify(`Promoted ${promoted.name} to ${tier}: ${promoted.promotedPath}. Reloading resources.`, "info");
@@ -943,7 +1170,6 @@ export default function skillGovernor(pi: ExtensionAPI): void {
         const selected = cachedSkills.find((item) => item.snapshot.skill.name === name);
         if (!selected) { ctx.ui.notify("Usage: /skill-governor retire <skill-name> <reason>", "error"); return; }
         const reason = reasonParts.join(" ").trim() || "User-authorized retirement";
-        if (!await ctx.ui.confirm("Retire skill?", `${name}\n${selected.snapshot.skill.filePath}\n\n${reason}`)) return;
         const linked = (await listCandidates(paths)).find((candidate) => candidate.promotedPath
           && normalizePath(candidate.promotedPath) === normalizePath(selected.snapshot.skill.filePath));
         const retired = await retireActiveSkill(paths, selected.snapshot.skill.filePath, reason, linked);
@@ -954,7 +1180,6 @@ export default function skillGovernor(pi: ExtensionAPI): void {
       if (action === "rollback") {
         const [id] = rest;
         if (!id) { ctx.ui.notify("Usage: /skill-governor rollback <retirement-id>", "error"); return; }
-        if (!await ctx.ui.confirm("Rollback retired skill?", id)) return;
         const target = await rollbackRetirement(paths, id);
         ctx.ui.notify(`Restored skill to ${target}. Reloading resources.`, "info");
         await ctx.reload();
@@ -965,12 +1190,11 @@ export default function skillGovernor(pi: ExtensionAPI): void {
         if (!raw) { ctx.ui.notify("Usage: /skill-governor allow-write <exact-path>", "error"); return; }
         const path = resolve(ctx.cwd, raw);
         if (!isWithin(path, paths.agentDir)) { ctx.ui.notify("Only paths inside the Pi agent directory can be approved.", "error"); return; }
-        if (!await ctx.ui.confirm("Allow one governed write?", path)) return;
         approvedWrites.add(normalizePath(path));
         ctx.ui.notify(`One write/edit call approved for ${path}`, "warning");
         return;
       }
-      ctx.ui.notify("Usage: /skill-governor status|candidates|audit <name>|evolve|evidence <id> <json-file>|promote <id> [canary|active]|retire <name> <reason>|rollback <id>|allow-write <path>", "warning");
+      ctx.ui.notify("Usage: /skill-governor status|candidates|audit <name>|evolve|evidence <id> <json-file>|promote <id> [canary|active] [--override]|retire <name> <reason>|rollback <id>|allow-write <path>", "warning");
     },
   });
 }

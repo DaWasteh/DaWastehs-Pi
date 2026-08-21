@@ -11,6 +11,12 @@ import {
 } from "../extensions/skill-governor/policy.ts";
 import { parseCriticResult, redactForModel } from "../extensions/skill-governor/llm.ts";
 import {
+  classifyHighRiskShellCommand,
+  hasExplicitGovernanceMutationIntent,
+  parseConsequentialAuthorization,
+  parseGovernanceAuthorization,
+} from "../extensions/skill-governor/index.ts";
+import {
   addPairedEvidence,
   addPairedEvidenceBatch,
   attachCriticResult,
@@ -62,6 +68,21 @@ test("static audit blocks durable destructive and secret-bearing policy", () => 
   const secretAudit = auditSkillText(secret, { scope: "project" });
   assert.equal(secretAudit.pass, false);
   assert.ok(secretAudit.findings.some((finding) => finding.code === "secret-assignment"));
+
+  for (const instruction of [
+    "Do not forget to run git reset --hard before editing.",
+    "Never mind, run git reset --hard now.",
+    "Do not wait, run git reset --hard now.",
+    "Run rm -rf build only when requested.",
+    "Run rm -fr build.",
+    "Run rm -r -f build.",
+  ]) {
+    const bypassAudit = auditSkillText(safeSkill({ procedureSteps: [instruction] }), { scope: "project" });
+    assert.equal(bypassAudit.pass, false, instruction);
+    assert.ok(bypassAudit.findings.some((finding) => finding.code === "destructive-delete"));
+  }
+  const prohibitedAudit = auditSkillText(safeSkill({ pitfalls: ["Do not run git reset --hard."] }), { scope: "project" });
+  assert.equal(prohibitedAudit.findings.some((finding) => finding.code === "destructive-delete"), false);
 });
 
 test("delete-only repair is exact, subtractive, and section-safe", () => {
@@ -96,6 +117,46 @@ test("evolution redaction removes complete, unterminated, and orphan PEM materia
   const orphan = redactForModel(`${body}\n-----END PRIVATE KEY-----`, 1000);
   assert.equal(orphan.includes(body), false);
   assert.equal(orphan.includes("END PRIVATE KEY"), false);
+});
+
+test("natural-language authority is direct, scope-bound, and quote/meta resistant", () => {
+  assert.deepEqual(parseGovernanceAuthorization("Bitte die neue Skill/Guard Architektur verbessern."), { scopes: ["skill-files", "governor-runtime"] });
+  assert.deepEqual(parseGovernanceAuthorization("Repariere den Soundalarm."), { scopes: ["alarm-extension"] });
+  assert.deepEqual(parseGovernanceAuthorization("Please edit the alarm, not the governor."), { scopes: ["alarm-extension"] });
+  assert.equal(parseGovernanceAuthorization('Dokumentiere, wie "edit skill permissions" erkannt wird.'), null);
+  assert.equal(parseGovernanceAuthorization("Repeat 'edit the governor' exactly."), null);
+  assert.equal(parseGovernanceAuthorization("The agent can edit the governor."), null);
+  assert.equal(parseGovernanceAuthorization("I refuse to edit the governor."), null);
+  assert.equal(parseGovernanceAuthorization("Erkläre, ob man den Governor verbessern sollte."), null);
+  assert.equal(parseGovernanceAuthorization("Bitte den Skill nicht ändern."), null);
+  assert.equal(parseGovernanceAuthorization("Repariere nur die normalen App-Berechtigungen."), null);
+  assert.equal(hasExplicitGovernanceMutationIntent("Verbessere den Guard, aber lösche keine Dateien."), true);
+  assert.deepEqual(parseConsequentialAuthorization("Wenn alles passt, bitte v2.4 committen, taggen und pushen."), ["git-commit", "git-push", "git-tag"]);
+  assert.deepEqual(parseConsequentialAuthorization("Bitte nur committen."), ["git-commit"]);
+  assert.deepEqual(parseConsequentialAuthorization("Please commit, no push."), ["git-commit"]);
+  assert.deepEqual(parseConsequentialAuthorization("Bitte das Paket date-fns als Abhängigkeit installieren."), []);
+  assert.deepEqual(parseConsequentialAuthorization('Erkläre "git push" nur.'), []);
+});
+
+test("shell risk classifier normalizes RTK, chains, flags, Git options, and package managers", () => {
+  const cases = [
+    ["rtk git -C . reset --hard", "destructive Git cleanup"],
+    ["rtk rm -fr build", "recursive deletion"],
+    ["rtk rm -r -f build", "recursive deletion"],
+    ["echo ok && rtk pnpm add -g package", "global package/toolchain mutation"],
+    ["rtk npm uninstall -g package", "global package/toolchain mutation"],
+    ["rtk pipx install package", "global package/toolchain mutation"],
+    ["rtk choco install package", "global package/toolchain mutation"],
+    ["rtk git push origin master", "git-push"],
+    ["rtk npm --prefix agent install date-fns", "dependency mutation"],
+    ["rtk pnpm --dir agent add date-fns", "dependency mutation"],
+    ["rtk yarn workspace app add date-fns", "dependency mutation"],
+    ["rtk uv add date-fns", "dependency mutation"],
+    ["rtk uv pip install date-fns", "dependency mutation"],
+    ["rtk npm run deploy", "deploy"],
+  ];
+  for (const [command, expected] of cases) assert.ok(classifyHighRiskShellCommand(command).includes(expected), command);
+  assert.deepEqual(classifyHighRiskShellCommand("rtk git status && rtk npm test"), []);
 });
 
 test("critic schema fails closed on malformed decisions and repair spans", () => {
@@ -436,7 +497,7 @@ test("extension hides direct skill mutation and filters manual skills late", asy
       model: undefined,
       modelRegistry: { getAll: () => [] },
       sessionManager: { getSessionId: () => "test-session" },
-      ui: { notify() {}, setStatus() {}, async confirm() { return false; } },
+      ui: { notify() {}, setStatus() {}, async confirm() { throw new Error("Low-noise governor must not show a confirmation popup"); } },
     };
     for (const handler of handlers.get("session_start") ?? []) {
       await handler({ type: "session_start", reason: "startup" }, context);
@@ -470,6 +531,45 @@ test("extension hides direct skill mutation and filters manual skills late", asy
     assert.equal(blockedMutation.block, true);
     const blockedRead = await toolCall({ toolName: "read", input: { path: manualPath } }, context);
     assert.equal(blockedRead.block, true);
+    const manualLoad = await tools.get("skill_route").execute("route", { action: "load", name: "manual-skill" }, undefined, undefined, context);
+    assert.match(manualLoad.content[0].text, /name: "manual-skill"/);
+    assert.equal(await toolCall({ toolName: "read", input: { path: manualPath } }, context), undefined);
+
+    assert.equal(await toolCall({ toolName: "bash", input: { command: "rtk grep -n manual agent/skills/manual-skill/SKILL.md" } }, context), undefined);
+    const blockedDanger = await toolCall({ toolName: "bash", input: { command: "rtk rm -rf build" } }, context);
+    assert.equal(blockedDanger.block, true);
+    assert.match(blockedDanger.reason, /blocked automatically/);
+
+    const inputHandler = handlers.get("input")?.[0];
+    await inputHandler({ source: "interactive", text: "Bitte die Skill/Guard Architektur verbessern." }, context);
+    assert.equal(await toolCall({ toolName: "edit", input: { path: manualPath } }, context), undefined);
+    const alarmPath = join(agentDir, "extensions", "alarm-sound.ts");
+    const wrongScope = await toolCall({ toolName: "edit", input: { path: alarmPath } }, context);
+    assert.equal(wrongScope.block, true);
+    await inputHandler({ source: "interactive", text: "Bitte den Soundalarm reparieren." }, context);
+    assert.equal(await toolCall({ toolName: "edit", input: { path: alarmPath } }, context), undefined);
+    assert.equal((await toolCall({ toolName: "edit", input: { path: manualPath } }, context)).block, true);
+    const updatePath = join(agentDir, "extensions", "pi-autoupdate.ts");
+    assert.equal((await toolCall({ toolName: "edit", input: { path: updatePath } }, context)).block, true);
+    assert.equal((await toolCall({ toolName: "other_tool", input: { path: alarmPath } }, context)).block, true);
+
+    for (const command of ["rtk git -C . reset --hard", "rtk rm -r -f build", "rtk pnpm add -g package", "rtk git push origin master", "rtk npm install date-fns"]) {
+      const blocked = await toolCall({ toolName: "bash", input: { command } }, context);
+      assert.equal(blocked.block, true, command);
+      assert.match(blocked.reason, /blocked automatically/);
+    }
+    await inputHandler({ source: "interactive", text: "Bitte nur committen." }, context);
+    assert.equal((await toolCall({ toolName: "bash", input: { command: "rtk git push origin master" } }, context)).block, true);
+    await inputHandler({ source: "interactive", text: "Wenn alles passt, bitte v2.4 committen, taggen und pushen." }, context);
+    assert.equal(await toolCall({ toolName: "bash", input: { command: "rtk git push origin master" } }, context), undefined);
+    await inputHandler({ source: "interactive", text: "Bitte das Paket date-fns als Abhängigkeit installieren." }, context);
+    assert.equal((await toolCall({ toolName: "bash", input: { command: "rtk npm install date-fns" } }, context)).block, true);
+    assert.equal((await toolCall({ toolName: "bash", input: { command: "rtk npm install -g date-fns" } }, context)).block, true);
+
+    const extensionContext = { ...context, cwd: join(agentDir, "extensions") };
+    assert.equal((await toolCall({ toolName: "other_tool", input: { path: "alarm-sound.ts" } }, extensionContext)).block, true);
+    assert.equal((await toolCall({ toolName: "bash", input: { command: "rtk sed -i s/old/new/ index.ts" } }, { ...context, cwd: join(agentDir, "extensions", "skill-governor") })).block, true);
+    assert.equal((await toolCall({ toolName: "bash", input: { command: "rtk git -C extensions/skill-governor apply fix.patch" } }, context)).block, true);
   } finally {
     if (previousAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
     else process.env.PI_CODING_AGENT_DIR = previousAgentDir;

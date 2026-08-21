@@ -8,6 +8,7 @@
     "test": "node --test tests/*.test.mjs",
     "typecheck": "tsc --noEmit",
     "skill:lint": "node benchmarks/skill-governor/lint.mjs",
+    "skill:probe": "node benchmarks/skill-governor/probe-evolution.mjs",
     "skill:bench": "node benchmarks/skill-governor/run.mjs --runs 3",
     "skill:report": "node benchmarks/skill-governor/report.mjs"
   },

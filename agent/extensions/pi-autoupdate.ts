@@ -26,9 +26,11 @@
  *
  * This extension is a thin, correct wrapper around those commands: it lets the
  * model trigger updates (`pi_update` tool) and adds a `/update` slash command in
- * the TUI, with a confirmation step. Pi already prints its own "updates
- * available" notice at startup, so this extension intentionally does NOT add a
- * second startup check.
+ * the TUI. Explicit natural-language update requests and slash commands are
+ * treated as authority; unrequested model updates fail closed without a
+ * technical confirmation popup. Pi already prints its own "updates available"
+ * notice at startup, so this extension intentionally does NOT add a second
+ * startup check.
  *
  * Windows note: the `pi` entry point on PATH is `pi.cmd`, a batch shim. Since
  * the Node fix for CVE-2024-27980, spawning a `.cmd`/`.bat` without a shell is
@@ -62,7 +64,56 @@ const PIX_PRETTY_PACKAGE_PATH = ["@xynogen", "pix-pretty"];
 /** What to update. Maps directly onto `pi update` flags. */
 type UpdateScope = "all" | "self" | "extensions";
 
+export interface PiUpdateAuthorization {
+  scope: UpdateScope;
+  force: boolean;
+}
+
+export function parsePiUpdateAuthorization(value: string): PiUpdateAuthorization | null {
+  const unquoted = value.replace(/"[^"\n]*"|`[^`\n]*`|‘[^’\n]*’|'[^'\n]{2,}'/g, " ");
+  const actionPattern = /\b(?:update|upgrade|refresh|reinstall|aktualisier(?:en|e|t)|updat(?:en|e|et)|neu\s+installier(?:en|e|t))\b/i;
+  const directCue = /^(?:please\b|bitte\b|can\s+you\b|could\s+you\b|kannst\s+du\b|können\s+wir\b|ich\s+möchte(?:,?\s+dass\s+du)?\b|i\s+want\s+you\s+to\b)/i;
+  const metaLead = /^(?:repeat|quote|explain|document|analy[sz]e|discuss|describe|should\s+i|erklär\w*|dokumentier\w*|analysier\w*|diskutier\w*|beschreib\w*|wiederhol\w*|zitiere?\b)/i;
+  const clause = unquoted.split(/[.!?\n;]+/).map((part) => part.trim()).find((part) => {
+    const withoutPolitePrefix = part.replace(/^(?:please|bitte|can\s+you|could\s+you|kannst\s+du|können\s+wir)\s+/i, "");
+    if (!part || metaLead.test(withoutPolitePrefix)) return false;
+    actionPattern.lastIndex = 0;
+    return actionPattern.test(part) && (directCue.test(part) || actionPattern.exec(withoutPolitePrefix)?.index === 0);
+  });
+  if (!clause) return null;
+  const negatedAction = /\b(?:do\s+not|don['’]?t|not|never|without|nicht|niemals|kein(?:e|en|er|es)?|ohne|weder|refuse\s+to)\b[^,]{0,60}\b(?:update|upgrade|refresh|reinstall|aktualisier(?:en|e|t)|updat(?:en|e|et)|neu\s+installier(?:en|e|t))\b/i.test(clause);
+  if (negatedAction) return null;
+  const excludesPi = /\b(?:no|not|without|except|excluding|skip|nicht|ohne|außer|kein(?:e|en|er|es)?)\s+pi\b/i.test(clause);
+  const excludesExtensions = /\b(?:no|not|without|except|excluding|skip|nicht|ohne|außer|kein(?:e|en|er|es)?)\s+(?:packages?|pakete?|extensions?|erweiterungen?|plugins?)\b/i.test(clause);
+  const hasPi = !excludesPi && /\bpi\b/i.test(clause);
+  const hasExtensions = !excludesExtensions && /\b(?:packages?|pakete?|extensions?|erweiterungen?|plugins?)\b/i.test(clause);
+  if (!hasPi && !hasExtensions) return null;
+  const forceNegated = /\b(?:do\s+not|don['’]?t|no|not|without|except|excluding|skip|nicht|ohne|außer|kein(?:e|en|er|es)?)\b[^,]{0,24}\b(?:force|forced|reinstall|erzwingen)\b/i.test(clause);
+  return {
+    scope: hasPi && hasExtensions ? "all" : hasExtensions ? "extensions" : "self",
+    force: !forceNegated && /\b(?:force|forced|reinstall|neu\s+installier(?:en|e|t)|erzwingen)\b/i.test(clause),
+  };
+}
+
+export function hasExplicitPiUpdateIntent(value: string): boolean {
+  return parsePiUpdateAuthorization(value) !== null;
+}
+
+export function updateAuthorizationAllows(
+  authorization: PiUpdateAuthorization | null,
+  scope: UpdateScope,
+  force: boolean,
+): boolean {
+  const scopeAllowed = authorization?.scope === "all" || authorization?.scope === scope;
+  return !!authorization && scopeAllowed && (!force || authorization.force);
+}
+
 export default async function (pi: ExtensionAPI) {
+  let pendingUpdateAuthorization: PiUpdateAuthorization | null = null;
+  pi.on("input", async (event) => {
+    if (event.source !== "extension") pendingUpdateAuthorization = parsePiUpdateAuthorization(event.text);
+    return { action: "continue" };
+  });
   /* ────────────────────────────────────────────
    * Self-version check (used only for the non-mutating `check` mode and for
    * the confirmation text). The actual update is always done by `pi update`.
@@ -1042,13 +1093,9 @@ export default async function (pi: ExtensionAPI) {
     }
   }
 
-  // Run once during extension startup so pi-heimdall sees the OS-specific value
-  // before its session_start handler reads ~/.pi/agent/heimdall.json.
-  await ensureHeimdallSandboxForPlatform();
-  // The tracked npm postinstall hook patches clean installations before Pi loads
-  // packages. This startup check is defense in depth for installs that skipped
-  // lifecycle scripts; a reload makes an already-imported package use the fix.
-  await ensurePiSubagentsAsyncWorkflowIdPatch(process.cwd());
+  // Startup is intentionally detection/load-only. OS config and package-source
+  // repairs run only inside an explicitly authorized update. Clean installs get
+  // the subagent compatibility repair from the tracked npm postinstall hook.
 
   async function ensurePostUpdatePackagePatches(
     cwd: string,
@@ -1438,7 +1485,7 @@ export default async function (pi: ExtensionAPI) {
       "'extensions' only packages. On Windows, pi-intercom's detached broker is paused and its respawn lock is held while npm replaces the package, avoiding EBUSY. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234, @xynogen/pix-pretty is refreshed if pix-optimizer needs its icon catalog, pi-subagents async workflow IDs are kept Windows-safe, the Heimdall sandbox is enabled on Linux and disabled on Windows/non-Linux, and known overwritten local package patches are re-applied. " +
       "Packages whose latest npm version is unresolvable by npm (e.g. published with an unresolved `workspace:*` dependency) are detected via a registry pre-flight and skipped, updating the rest individually, so a single broken upstream release never blocks other updates. " +
       "`check=true` reports whether a pi update is available without installing (package update availability is " +
-      "surfaced by pi at startup; there is no dry-run for it). `confirm=false` skips the confirmation dialog. " +
+      "surfaced by pi at startup; there is no dry-run for it). A direct, scope-matching user request authorizes one update without a redundant popup. " +
       "`force` reinstalls pi even if current (scope 'self' only).",
     parameters: Type.Object({
       scope: Type.Optional(
@@ -1451,7 +1498,7 @@ export default async function (pi: ExtensionAPI) {
       ),
       confirm: Type.Optional(
         Type.Boolean({
-          description: "Skip confirmation dialog. Default: true (interactive) / false (non-interactive).",
+          description: "Deprecated compatibility field; ignored. Authority comes from the user's direct, scope-matching request.",
         }),
       ),
       force: Type.Optional(
@@ -1459,10 +1506,10 @@ export default async function (pi: ExtensionAPI) {
       ),
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+      signal?.throwIfAborted();
       const scope: UpdateScope = params.scope ?? "all";
       const checkOnly = params.check ?? false;
       const force = (params.force ?? false) && scope === "self";
-      const shouldConfirm = params.confirm ?? ctx.hasUI;
 
       // ── Check-only ───────────────────────────────────────────────────────
       // We can only reliably dry-check pi itself (via pi.dev). Package update
@@ -1485,27 +1532,13 @@ export default async function (pi: ExtensionAPI) {
         };
       }
 
-      // ── Confirm ────────────────────────────────────────────────────────────
+      // ── Authority ──────────────────────────────────────────────────────────
       const args = updateArgs(scope, force);
-      if (shouldConfirm) {
-        const self = scope === "extensions" ? null : await checkSelfUpdate(signal);
-        const piHint =
-          self && self.latest
-            ? self.available
-              ? `\n\npi: ${self.current ?? "unknown"} → ${self.latest}`
-              : `\n\npi is current (${self.latest})${force ? "; will reinstall (--force)" : ""}`
-            : "";
-        const confirmed = await ctx.ui.confirm(
-          "Pi Update",
-          `Update ${scopeLabel(scope)}?\n\nThis runs: ${["pi", ...args].join(" ")}` +
-            `${scope !== "self" ? "\n\nPi will update outdated packages and reconcile pinned git refs." : ""}` +
-            `${scope !== "self" ? `\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}, pix-pretty/pix-optimizer compatibility will be checked, the Heimdall sandbox will be ${desiredHeimdallSandboxEnabled() ? "enabled" : "disabled"} for ${platformLabel()}, and known local patches re-applied.` : ""}` +
-            piHint,
-        );
-        if (!confirmed) {
-          return { content: [{ type: "text", text: "❌ Update cancelled by user." }], details: {} };
-        }
+      const authorization = pendingUpdateAuthorization;
+      if (!updateAuthorizationAllows(authorization, scope, force)) {
+        throw new Error(`Pi update blocked: the user's latest direct request does not authorize scope='${scope}'${force ? " with force" : ""}. Do not show a raw-command approval popup; ask one plain-language question only if the broader effect is genuinely needed.`);
       }
+      pendingUpdateAuthorization = null;
 
       // ── Run ──────────────────────────────────────────────────────────────
       ctx.ui.setStatus("pi-update", `Updating ${scopeLabel(scope)}…`);
@@ -1562,19 +1595,13 @@ export default async function (pi: ExtensionAPI) {
         return;
       }
 
+      if (!["", "self", "extensions", "ext"].includes(argStr)) {
+        ctx.ui.notify("Nutzung: /update [self|extensions|check]", "warning");
+        return;
+      }
       const scope: UpdateScope =
         argStr === "self" ? "self" : argStr === "extensions" || argStr === "ext" ? "extensions" : "all";
       const args = updateArgs(scope, false);
-
-      const confirmed = await ctx.ui.confirm(
-        "Pi Update",
-        `Update ${scopeLabel(scope)} now?\n\nRuns: ${["pi", ...args].join(" ")}` +
-          `${scope !== "self" ? `\n\nAfterwards, ${LLAMA_CPP_PACKAGE_NAME} will be reset to ${LLAMA_SERVER_URL}, pix-pretty/pix-optimizer compatibility will be checked, the Heimdall sandbox will be ${desiredHeimdallSandboxEnabled() ? "enabled" : "disabled"} for ${platformLabel()}, and known local patches re-applied.` : ""}`,
-      );
-      if (!confirmed) {
-        ctx.ui.notify("Update cancelled.", "info");
-        return;
-      }
 
       ctx.ui.setStatus("pi-update", `Updating ${scopeLabel(scope)}…`);
       const { result, postUpdate, maintenanceNotice } = await runUpdateWithPostPatches(scope, false, ctx.cwd);

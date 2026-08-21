@@ -62,8 +62,17 @@ Tool (`pi_update`, callable by the model):
 
 - `scope`: `"all"` (default), `"self"`, or `"extensions"`
 - `check`: only check the Pi version, don't install
-- `confirm`: show a confirmation dialog (default: on in interactive mode)
+- `confirm`: deprecated compatibility field; ignored (authority is derived from the direct request)
 - `force`: reinstall Pi even if current (only with `scope: "self"`)
+
+A direct natural-language request such as “Pi und die Extensions aktualisieren”
+authorizes exactly that scope for one model-tool call without a second popup.
+“Nur Pi” and “nur die Extensions” cannot silently escalate to the other scope;
+forced reinstall additionally requires explicit wording. Quoted examples,
+meta-questions, conditional requests, and negations grant no authority. An
+unrequested model update is blocked automatically—even if the model requests a
+confirmation popup. Typing a valid `/update ...` command is itself explicit
+authority; typos show usage instead of defaulting to a full update.
 
 Version-pinned npm specs and pinned git refs are skipped automatically by
 `pi update`, so the extension does not special-case them.
@@ -77,7 +86,8 @@ user cancellation. It also preserves a Windows compatibility patch for
 directory because Pi 0.84 tool-call IDs may contain the Windows-invalid `|`
 character. The tracked `agent/npm/patches/postinstall.cjs` applies this fix
 while Pi installs package dependencies, before the package is first loaded;
-the update extension re-checks it at startup and after later updates.
+the update extension re-checks it only during an explicitly requested later
+update. Merely starting Pi performs no package-source or OS-config mutation.
 
 #### Upstream-publish-bug resilience
 
@@ -97,6 +107,14 @@ pre-flight finds nothing broken and the normal bulk update resumes. The
 pre-flight is fail-open (offline / custom-registry / errors never block
 updates). It was added after `@xynogen/pix-optimizer@1.1.14` shipped
 `"@xynogen/pix-data": "workspace:*"`.
+
+### `alarm-sound.ts`
+
+Plays the configured MP3 when Pi finishes, `ask_user_question` waits for input,
+or any extension opens a yes/no confirmation. Permission selectors such as
+MCP/RTK allow-or-deny dialogs are detected as well; ordinary menus do not ring.
+The wrapper is shared across extensions and deduplicates an already-running
+alarm. Use `/alarm-sounds on|off|test|status` to control, test, or diagnose it.
 
 ### `stargate-header.ts`
 
@@ -120,8 +138,9 @@ output token counts, with the model and git branch right-aligned.
 
 Applies lifecycle governance to procedural skills without patching package
 extensions. Per task it exposes at most five positively matched automatic skill
-descriptions; unmatched auto skills stay lazy-searchable, while manual/canary
-skills require approval. It blocks direct `skill_manage` mutations, writes new
+descriptions; unmatched auto skills stay lazy-searchable. Manual/canary text is
+read-only and can be loaded without a popup; the actions described inside remain
+separately guarded. It blocks direct `skill_manage` mutations, writes new
 procedures to an undiscovered candidate store, and requires three distinct
 recurring observations before automatic generation. Generator/critic calls stay
 on the current provider by default; static audit, independent criticism,
@@ -134,9 +153,19 @@ Commands:
 - `/skill-governor audit <name>` — run the paper-derived static triage
 - `/skill-governor evolve` — force a candidate proposal from the latest task
 - `/skill-governor evidence <id> <json-file>` — import digest-bound paired evidence
-- `/skill-governor promote <id> [canary|active]` — confirmed promotion
+- `/skill-governor promote <id> [canary|active] [--override]` — explicit promotion; incomplete active qualification needs the deliberate override flag
 - `/skill-governor retire <name> <reason>` / `rollback <id>` — reversible removal
-- `/skill-governor allow-write <path>` — approve exactly one ordinary edit/write
+- `/skill-governor allow-write <path>` — authorize exactly one ordinary edit/write
+
+The low-noise permission policy allows read-only shell inspection without a
+prompt, recognizes an explicit natural-language request to change the
+skill/guard architecture, and automatically blocks unrequested destructive or
+global-mutation commands. It no longer asks the user to interpret raw RTK
+commands. Each release/history action (`commit`, `push`, `tag`, publish, deploy)
+requires its own direct matching request. Dependency, destructive, privileged,
+and global shell mutations stay blocked and must use a safer dedicated flow. If
+a genuine decision remains, the agent must ask one plain-language
+question, state the real consequence, and put the recommended safe option first.
 
 The `skill_route` and `skill_governor` model tools expose controlled lazy
 routing and candidate submission. Runtime candidates, evidence, snapshots, and
