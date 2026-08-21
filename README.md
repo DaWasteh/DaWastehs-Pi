@@ -157,15 +157,21 @@ Commands:
 - `/skill-governor retire <name> <reason>` / `rollback <id>` — reversible removal
 - `/skill-governor allow-write <path>` — authorize exactly one ordinary edit/write
 
-The low-noise permission policy allows read-only shell inspection without a
-prompt, recognizes an explicit natural-language request to change the
-skill/guard architecture, and automatically blocks unrequested destructive or
-global-mutation commands. It no longer asks the user to interpret raw RTK
-commands. Each release/history action (`commit`, `push`, `tag`, publish, deploy)
-requires its own direct matching request. Dependency, destructive, privileged,
-and global shell mutations stay blocked and must use a safer dedicated flow. If
-a genuine decision remains, the agent must ask one plain-language
-question, state the real consequence, and put the recommended safe option first.
+The v2.5 low-noise policy confines runtime interception to actual file-tool or
+shell mutations of governor-owned paths. Opaque inputs for Todo, web research,
+subagents, memory, MCP, and Intercom are never reinterpreted as filesystem
+paths; Windows containment also rejects cross-volume `path.relative()` results
+instead of treating another drive as part of `~/.pi`. Test names and prose that
+mention the governor remain usable.
+
+Ordinary repository commands—including requested dependency and release work—
+remain bounded by the user's task and by the dedicated tool executing them;
+skill-governor no longer acts as a second global shell permission system. A
+direct request to edit skills or the governor is still scope-bound, survives
+informational follow-ups, and can be explicitly revoked. If a genuine decision
+could cause irreversible loss, credential exposure, or effects outside the
+requested scope, the agent asks one plain-language question instead of exposing
+a raw command approval dialog.
 
 The `skill_route` and `skill_governor` model tools expose controlled lazy
 routing and candidate submission. Runtime candidates, evidence, snapshots, and

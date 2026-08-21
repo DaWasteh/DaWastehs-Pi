@@ -51,10 +51,11 @@ technical yes/no popup. Incomplete active promotion fails closed unless the user
 repeats the command with `--override`. Promotion, retirement, and rollback reload
 Pi resources after durable state changes.
 
-The low-noise permission policy automatically allows read-only inspection,
-allows governed edits only when the user's natural-language request explicitly
-asks to change the skill/guard architecture, and blocks unrequested destructive
-shell commands without asking the user to interpret them.
+The low-noise permission policy guards actual file-tool and shell mutations of
+governor-owned paths. It does not scan opaque custom-tool payloads or treat
+messages, test names, and paths on another Windows volume as governed files.
+Ordinary repository commands remain governed by the user's task and the tool
+that executes them; skill-governor is intentionally not a global shell gate.
 
 ## Security boundary
 

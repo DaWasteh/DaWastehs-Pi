@@ -56,13 +56,6 @@ import type {
 const MUTATING_SKILL_ACTIONS = new Set(["create", "patch", "update", "edit", "delete"]);
 const SKILL_BLOCK_PATTERN = /(?:\n\nThe following skills provide specialized instructions[\s\S]*?(?=<available_skills>))?<available_skills>[\s\S]*?<\/available_skills>/g;
 const GOVERNANCE_BLOCK_PATTERN = /\n?<skill-governance>[\s\S]*?<\/skill-governance>\n?/g;
-const AGENT_MUTATION_COMMAND = /(?:\b(?:cp|mv|rm|del|rmdir|move|copy|touch|mkdir|new-item|set-content|out-file|add-content|tee|patch|sed\s+-i|perl\s+-pi)\b|\bgit\b[^\n;&|]{0,120}\b(?:apply|checkout|restore)\b|(?:python|node)\s+(?:-c|-e)\b|powershell(?:\.exe)?\b[^\n]*(?:-command|-encodedcommand)|(?:>|>>)\s*[^&|])/i;
-const DANGEROUS_COMMAND_PATTERNS: Array<[string, RegExp]> = [
-  ["destructive Git cleanup", /\bgit\s+(?:clean\s+-[^\n;&|]*[fdx]|reset\s+--hard)\b/i],
-  ["recursive deletion", /\b(?:rm\s+-rf|rmdir\s+\/s|del\s+\/[sq])\b|remove-item\b[^\n;&|]*-recurse/i],
-  ["global package/toolchain mutation", /\b(?:npm\s+(?:install|update)\s+-g|pip\s+install\s+--user|winget\s+(?:install|upgrade)|brew\s+(?:install|upgrade)|apt(?:-get)?\s+(?:install|upgrade)|cargo\s+install)\b/i],
-];
-
 interface CachedSkill {
   snapshot: SkillSnapshot;
   text: string;
@@ -111,14 +104,7 @@ async function canonicalTarget(value: string, cwd = process.cwd()): Promise<stri
 
 function isWithin(candidate: string, root: string): boolean {
   const rel = relative(resolve(root), resolve(candidate));
-  return rel === "" || (!rel.startsWith(`..${sep}`) && rel !== ".." && !rel.startsWith("../"));
-}
-
-function collectInputStrings(value: unknown, output: string[] = []): string[] {
-  if (typeof value === "string") output.push(value);
-  else if (Array.isArray(value)) for (const item of value) collectInputStrings(item, output);
-  else if (value && typeof value === "object") for (const item of Object.values(value)) collectInputStrings(item, output);
-  return output;
+  return rel === "" || (!isAbsolute(rel) && !rel.startsWith(`..${sep}`) && rel !== ".." && !rel.startsWith("../"));
 }
 
 function textFromMessageContent(content: unknown): string {
@@ -167,7 +153,7 @@ function stripQuotedExamples(value: string): string {
 }
 
 function directRequestClauses(value: string, action: RegExp): string[] {
-  const directCue = /^(?:please\b|bitte\b|can\s+you\b|could\s+you\b|kannst\s+du\b|können\s+wir\b|ich\s+möchte(?:,?\s+dass\s+du)?\b|i\s+want\s+you\s+to\b|wenn\s+alles(?:\s+dann)?\s+(?:passt|grün\s+ist|erfolgreich\s+ist)\s*,?\s*bitte\b)/i;
+  const directCue = /^(?:please\b|bitte\b|can\s+you\b|could\s+you\b|kannst\s+du\b|können\s+wir\b|wir\s+müssen\b|du\s+sollst\b|ich\s+(?:möchte|brauche)(?:,?\s+dass\s+du)?\b|i\s+want\s+you\s+to\b|we\s+(?:need|have)\s+to\b|wenn\s+alles(?:\s+dann)?\s+(?:passt|grün\s+ist|erfolgreich\s+ist)\s*,?\s*bitte\b)/i;
   const metaLead = /^(?:repeat|quote|explain|document|analy[sz]e|discuss|describe|should\s+i|erklär\w*|dokumentier\w*|analysier\w*|diskutier\w*|beschreib\w*|wiederhol\w*|zitiere?\b)/i;
   return stripQuotedExamples(value).split(/(?<!\d)\.(?!\d)|[!?\n;]+/).map((part) => part.trim()).filter((part) => {
     const withoutPolitePrefix = part.replace(/^(?:please|bitte|can\s+you|could\s+you|kannst\s+du|können\s+wir)\s+/i, "");
@@ -181,9 +167,9 @@ function directRequestClauses(value: string, action: RegExp): string[] {
 
 function hasNegatedGovernanceAction(value: string): boolean {
   const negation = String.raw`(?:do\s+not|don['’]?t|not|never|without|nicht|niemals|kein(?:e|en|er|es)?|ohne|weder)`;
-  const action = String.raw`(?:change|edit|update|improve|fix|repair|refactor|änder(?:n|e|t)|bearbeit(?:en|e|et)|aktualisier(?:en|e|t)|verbesser(?:n|e|t)|fix(?:en|e|t)|reparier(?:en|e|t)|überarbeit(?:en|e|et)|anpass(?:en|e|t))`;
-  const subject = String.raw`(?:skill|skills|skill-governor|governor|guard|guards|alarm|alarms|soundalarm|pi-autoupdate|updater)`;
-  const pattern = String.raw`\b${negation}\b[^.!?\n]{0,60}\b(?:${action})\b[^.!?\n]{0,40}\b(?:${subject})\b|\b${negation}\b[^.!?\n]{0,60}\b(?:${subject})\b[^.!?\n]{0,40}\b(?:${action})\b|\b(?:${subject})\b[^.!?\n]{0,40}\b${negation}\b[^.!?\n]{0,40}\b(?:${action})\b`;
+  const action = String.raw`(?:change|edit|update|improve|fix|repair|refactor|loosen|relax|reduce|änder(?:n|e|t)|bearbeit(?:en|e|et)|aktualisier(?:en|e|t)|verbesser(?:n|e|t)|fix(?:en|e|t)|reparier(?:en|e|t)|überarbeit(?:en|e|et)|anpass(?:en|e|t)|locker(?:n|e|t)|entschärf(?:en|e|t))`;
+  const subject = String.raw`(?:skill|skills|skill-(?:governor|govenor)|governor|govenor|guard|guards|schutzmechanismus|schutzmechanismen|protection\s+mechanisms?|permission\s+governance|alarm|alarms|soundalarm|pi-autoupdate|updater)`;
+  const pattern = String.raw`\b${negation}\b[^.!?\n]{0,60}(?:${action})\b[^.!?\n]{0,40}\b(?:${subject})\b|\b${negation}\b[^.!?\n]{0,60}\b(?:${subject})\b[^.!?\n]{0,40}(?:${action})\b|\b(?:${subject})\b[^.!?\n]{0,40}\b${negation}\b[^.!?\n]{0,40}(?:${action})\b`;
   return new RegExp(pattern, "i").test(value);
 }
 
@@ -193,12 +179,12 @@ function clauseExcludes(clause: string, subject: RegExp): boolean {
 }
 
 export function parseGovernanceAuthorization(value: string): GovernanceAuthorization | null {
-  const action = /\b(?:change|edit|update|improve|fix|repair|refactor|harden|rework|änder(?:n|e|t)|bearbeit(?:en|e|et)|aktualisier(?:en|e|t)|verbesser(?:n|e|t)|fix(?:en|e|t)|reparier(?:en|e|t)|härt(?:en|e|et)|überarbeit(?:en|e|et)|anpass(?:en|e|t))\b/i;
+  const action = /(?:change|edit|update|improve|fix|repair|refactor|harden|rework|loosen|relax|reduce|änder(?:n|e|t)|bearbeit(?:en|e|et)|aktualisier(?:en|e|t)|verbesser(?:n|e|t)|fix(?:en|e|t)|reparier(?:en|e|t)|härt(?:en|e|et)|überarbeit(?:en|e|et)|anpass(?:en|e|t)|locker(?:n|e|t)|entschärf(?:en|e|t))\b/i;
   const scopes = new Set<GovernanceAuthorityScope>();
   for (const clause of directRequestClauses(value, action)) {
     if (hasNegatedGovernanceAction(clause)) continue;
     const skillSubject = /\b(?:skill|skills)\b/i;
-    const governorSubject = /\b(?:skill-governor|governor|guard|guards)\b/i;
+    const governorSubject = /\b(?:skill-(?:governor|govenor)|governor|govenor|guard|guards|schutzmechanismus|schutzmechanismen|protection\s+mechanisms?|permission\s+governance)\b/i;
     const alarmSubject = /\b(?:alarm|alarms|soundalarm)\b/i;
     const updaterSubject = /\b(?:pi-autoupdate|update-extension|updater)\b/i;
     if (skillSubject.test(clause) && !clauseExcludes(clause, skillSubject)) scopes.add("skill-files");
@@ -211,27 +197,6 @@ export function parseGovernanceAuthorization(value: string): GovernanceAuthoriza
 
 export function hasExplicitGovernanceMutationIntent(value: string): boolean {
   return parseGovernanceAuthorization(value) !== null;
-}
-
-export type ConsequentialAuthority = "git-commit" | "git-push" | "git-tag" | "package-publish" | "deploy";
-
-export function parseConsequentialAuthorization(value: string): ConsequentialAuthority[] {
-  const action = /\b(?:commit|push|tag|publish|release|deploy|committen|pushen|taggen|veröffentlichen)\b/i;
-  const scopes = new Set<ConsequentialAuthority>();
-  for (const clause of directRequestClauses(value, action)) {
-    if (/\b(?:do\s+not|don['’]?t|not|never|without|nicht|niemals|kein(?:e|en|er|es)?|ohne|weder|refuse\s+to)\b[^,]{0,50}\b(?:commit|push|tag|publish|release|deploy|committen|pushen|taggen|veröffentlichen)\b/i.test(clause)) continue;
-    const commitAction = /\b(?:commit|committen)\b/i;
-    const pushAction = /\b(?:push|pushen)\b/i;
-    const tagAction = /\b(?:tag|taggen)\b/i;
-    const publishAction = /\b(?:publish|release|veröffentlichen)\b/i;
-    const deployAction = /\bdeploy\b/i;
-    if (commitAction.test(clause) && !clauseExcludes(clause, commitAction)) scopes.add("git-commit");
-    if (pushAction.test(clause) && !clauseExcludes(clause, pushAction)) scopes.add("git-push");
-    if (tagAction.test(clause) && !clauseExcludes(clause, tagAction)) scopes.add("git-tag");
-    if (publishAction.test(clause) && !clauseExcludes(clause, publishAction)) scopes.add("package-publish");
-    if (deployAction.test(clause) && !clauseExcludes(clause, deployAction)) scopes.add("deploy");
-  }
-  return [...scopes];
 }
 
 function splitShellSegments(command: string): string[] {
@@ -266,91 +231,144 @@ function shellTokens(segment: string): string[] {
   }).filter(Boolean);
 }
 
+interface ShellMutationPlan {
+  paths: string[];
+  roots: string[];
+}
+
 function commandBase(value: string): string {
   return value.replace(/\\/g, "/").split("/").pop()!.toLowerCase().replace(/\.(?:exe|cmd|bat)$/i, "");
 }
 
-export function classifyHighRiskShellCommand(command: string): string[] {
-  const findings = new Set<string>();
-  const inspect = (source: string, depth = 0) => {
-    if (depth > 3) { findings.add("ambiguous nested shell command"); return; }
-    for (const segment of splitShellSegments(source)) {
-      const tokens = shellTokens(segment);
-      let index = 0;
-      while (commandBase(tokens[index] ?? "") === "rtk") index++;
-      while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[index] ?? "")) index++;
-      while (["command", "env"].includes(commandBase(tokens[index] ?? ""))) {
-        index++;
-        while ((tokens[index] ?? "").startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[index] ?? "")) index++;
-      }
-      const base = commandBase(tokens[index] ?? "");
-      const args = tokens.slice(index + 1);
-      if (!base) continue;
-      if (["bash", "sh", "zsh", "cmd", "powershell", "pwsh"].includes(base)) {
-        const flagIndex = args.findIndex((arg) => ["-c", "-command", "/c"].includes(arg.toLowerCase()));
-        if (flagIndex >= 0 && args[flagIndex + 1]) inspect(args.slice(flagIndex + 1).join(" "), depth + 1);
-      }
-      if (["sudo", "runas"].includes(base)) findings.add("privilege escalation");
-      if (base === "git") {
-        let cursor = 0;
-        while (cursor < args.length && args[cursor]!.startsWith("-")) {
-          cursor += ["-c", "--git-dir", "--work-tree"].includes(args[cursor]!.toLowerCase()) ? 2 : 1;
-        }
-        const subcommand = (args[cursor] ?? "").toLowerCase();
-        const tail = args.slice(cursor + 1).map((arg) => arg.toLowerCase());
-        if (subcommand === "reset" && tail.includes("--hard")) findings.add("destructive Git cleanup");
-        if (subcommand === "clean") {
-          const flags = tail.filter((arg) => arg.startsWith("-")).join("");
-          if (flags.includes("f") && (flags.includes("d") || flags.includes("x"))) findings.add("destructive Git cleanup");
-        }
-        if ((subcommand === "checkout" || subcommand === "restore") && tail.some((arg) => arg === "." || arg === "--")) findings.add("destructive Git cleanup");
-        if (subcommand === "push") findings.add("git-push");
-        if (subcommand === "commit") findings.add("git-commit");
-        if (subcommand === "tag" && !tail.some((arg) => ["-l", "--list"].includes(arg))) findings.add("git-tag");
-      }
-      if (base === "rm") {
-        const flags = args.filter((arg) => arg.startsWith("-")).join("").toLowerCase();
-        if (flags.includes("r") && flags.includes("f")) findings.add("recursive deletion");
-      }
-      if ((base === "rmdir" && args.some((arg) => /^[/ -]s$/i.test(arg)))
-        || (base === "del" && args.some((arg) => /^[/ -][sq]$/i.test(arg)))
-        || (base === "remove-item" && args.some((arg) => /^-(?:recurse|r)$/i.test(arg)))) findings.add("recursive deletion");
-      if (["npm", "pnpm", "yarn", "bun"].includes(base)) {
-        let managerCursor = 0;
-        const optionsWithValue = new Set(["--prefix", "--workspace", "-w", "--filter", "--cwd", "--dir", "-c"]);
-        while (managerCursor < args.length && args[managerCursor]!.startsWith("-")) {
-          managerCursor += optionsWithValue.has(args[managerCursor]!.toLowerCase()) ? 2 : 1;
-        }
-        if ((args[managerCursor] ?? "").toLowerCase() === "workspace") managerCursor += 2;
-        const action = (args[managerCursor] ?? "").toLowerCase();
-        const script = (args[managerCursor + 1] ?? "").toLowerCase();
-        if (["install", "i", "add", "update", "upgrade", "uninstall", "remove", "rm"].includes(action)) {
-          findings.add("dependency mutation");
-          if (args.some((arg) => ["-g", "--global"].includes(arg.toLowerCase()))) findings.add("global package/toolchain mutation");
-        }
-        if (base === "npm" && action === "publish") findings.add("package-publish");
-        if (["run", "run-script"].includes(action) && /^(?:deploy|release|publish)$/.test(script)) findings.add(script === "deploy" ? "deploy" : "package-publish");
-      }
-      if (base === "uv") {
-        const action = (args[0] ?? "").toLowerCase();
-        if (["add", "remove", "sync", "lock"].includes(action) || (action === "pip" && ["install", "uninstall"].includes((args[1] ?? "").toLowerCase()))) findings.add("dependency mutation");
-      }
-      if ((base === "pip" || (base === "python" && args[0] === "-m" && args[1] === "pip")) && args.includes("install")) {
-        findings.add("dependency mutation");
-        if (args.includes("--user")) findings.add("global package/toolchain mutation");
-      }
-      if (base === "pipx" && ["install", "upgrade", "uninstall"].includes((args[0] ?? "").toLowerCase())) {
-        findings.add("dependency mutation");
-        findings.add("global package/toolchain mutation");
-      }
-      if (base === "gh" && (args[0] ?? "").toLowerCase() === "release") findings.add("package-publish");
-      if (/^(?:deploy|vercel|netlify)$/.test(base)) findings.add("deploy");
-      if (["winget", "choco", "scoop", "brew", "apt", "apt-get", "cargo"].includes(base)
-        && ["install", "upgrade", "update", "uninstall", "remove"].includes((args[0] ?? "").toLowerCase())) findings.add("global package/toolchain mutation");
+function cleanMutationToken(value: string): string {
+  const trimmed = value.trim().replace(/^[({!]+|[)},;]+$/g, "");
+  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) return trimmed.slice(1, -1);
+  return trimmed;
+}
+
+function shellOperands(args: string[]): string[] {
+  return args.map(cleanMutationToken).filter((arg) => arg
+    && !arg.startsWith("-")
+    && !/^\/(?:s|q|f|y|a|p)$/i.test(arg)
+    && !/^\d*(?:>>?|<<?)/.test(arg));
+}
+
+function outputRedirectionTargets(segment: string): string[] {
+  const targets: string[] = [];
+  let quote: "'" | '"' | null = null;
+  let escaped = false;
+  for (let index = 0; index < segment.length; index++) {
+    const char = segment[index]!;
+    if (escaped) { escaped = false; continue; }
+    if (char === "\\" && quote !== "'") { escaped = true; continue; }
+    if (quote) { if (char === quote) quote = null; continue; }
+    if (char === "'" || char === '"') { quote = char; continue; }
+    if (char !== ">") continue;
+    let cursor = index + 1;
+    if (segment[cursor] === ">") cursor++;
+    if (segment[cursor] === "|") cursor++;
+    while (/\s/.test(segment[cursor] ?? "")) cursor++;
+    if (!segment[cursor] || segment[cursor] === "&") continue;
+    let target = "";
+    const targetQuote = segment[cursor] === "'" || segment[cursor] === '"' ? segment[cursor++]! : null;
+    while (cursor < segment.length) {
+      const next = segment[cursor]!;
+      if (targetQuote ? next === targetQuote : /[\s;&|]/.test(next)) break;
+      target += next;
+      cursor++;
     }
-  };
-  inspect(command);
-  return [...findings];
+    const cleaned = cleanMutationToken(target);
+    if (cleaned && !/^&?\d+$/.test(cleaned)) targets.push(cleaned);
+    index = cursor;
+  }
+  return targets;
+}
+
+function shellMutationPlan(command: string, depth = 0): ShellMutationPlan {
+  const paths: string[] = [];
+  const roots: string[] = [];
+  if (depth > 3) return { paths, roots };
+  for (const segment of splitShellSegments(command)) {
+    paths.push(...outputRedirectionTargets(segment));
+    const tokens = shellTokens(segment);
+    let index = 0;
+    while (commandBase(tokens[index] ?? "") === "rtk") index++;
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[index] ?? "")) index++;
+    while (["command", "env"].includes(commandBase(tokens[index] ?? ""))) {
+      index++;
+      while ((tokens[index] ?? "").startsWith("-") || /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[index] ?? "")) index++;
+    }
+    if (["sudo", "runas"].includes(commandBase(tokens[index] ?? ""))) index++;
+    const base = commandBase(tokens[index] ?? "");
+    const args = tokens.slice(index + 1);
+    if (!base) continue;
+
+    if (["bash", "sh", "zsh", "cmd", "powershell", "pwsh"].includes(base)) {
+      const flagIndex = args.findIndex((arg) => ["-c", "-command", "/c"].includes(arg.toLowerCase()));
+      if (flagIndex >= 0 && args[flagIndex + 1]) {
+        const nested = shellMutationPlan(args.slice(flagIndex + 1).join(" "), depth + 1);
+        paths.push(...nested.paths);
+        roots.push(...nested.roots);
+      }
+      continue;
+    }
+
+    if (base === "git") {
+      let cursor = 0;
+      let gitRoot = ".";
+      while (cursor < args.length && args[cursor]!.startsWith("-")) {
+        const rawOption = args[cursor]!;
+        const option = rawOption.toLowerCase();
+        if (rawOption === "-C" && args[cursor + 1]) {
+          gitRoot = cleanMutationToken(args[cursor + 1]!);
+          cursor += 2;
+          continue;
+        }
+        if (["-c", "--git-dir", "--work-tree"].includes(option)) {
+          if (option === "--work-tree" && args[cursor + 1]) gitRoot = cleanMutationToken(args[cursor + 1]!);
+          cursor += 2;
+          continue;
+        }
+        if (option.startsWith("--work-tree=")) gitRoot = cleanMutationToken(rawOption.slice("--work-tree=".length));
+        cursor++;
+      }
+      const subcommand = (args[cursor] ?? "").toLowerCase();
+      const tail = args.slice(cursor + 1);
+      if (["apply", "checkout", "restore", "reset", "clean"].includes(subcommand)) roots.push(gitRoot);
+      if (["checkout", "restore", "rm", "mv"].includes(subcommand)) paths.push(...shellOperands(tail));
+      continue;
+    }
+
+    const operands = shellOperands(args);
+    if (["cp", "copy", "copy-item"].includes(base)) {
+      const targetDirectory = args.find((arg) => /^--target-directory=/.test(arg))?.split("=", 2)[1];
+      const shortTarget = args.findIndex((arg) => arg === "-t" || arg === "--target-directory");
+      const destinationOption = args.findIndex((arg) => ["-destination", "-dest"].includes(arg.toLowerCase()));
+      const destination = targetDirectory
+        ?? (shortTarget >= 0 ? args[shortTarget + 1] : undefined)
+        ?? (destinationOption >= 0 ? args[destinationOption + 1] : undefined)
+        ?? operands.at(-1);
+      if (destination) paths.push(cleanMutationToken(destination));
+    } else if (["mv", "move", "move-item"].includes(base)) {
+      paths.push(...operands);
+    } else if (["rm", "del", "rmdir", "remove-item"].includes(base)) {
+      paths.push(...operands);
+    } else if (["touch", "mkdir", "new-item"].includes(base)) {
+      paths.push(...operands);
+    } else if (["set-content", "out-file", "add-content"].includes(base)) {
+      const pathOption = args.findIndex((arg) => ["-path", "-literalpath", "-filepath"].includes(arg.toLowerCase()));
+      const target = pathOption >= 0 ? args[pathOption + 1] : operands[0];
+      if (target) paths.push(cleanMutationToken(target));
+    } else if (base === "tee") {
+      paths.push(...operands);
+    } else if (base === "patch") {
+      roots.push(".");
+    } else if ((base === "sed" && args.some((arg) => arg === "-i" || /^-i./.test(arg) || arg === "--in-place" || /^--in-place=/.test(arg)))
+      || (base === "perl" && args.some((arg) => /^-[^\s]*pi/.test(arg)))) {
+      paths.push(...operands);
+    }
+  }
+  return { paths: [...new Set(paths)], roots: [...new Set(roots)] };
 }
 
 function evolutionErrorCode(error: unknown): string {
@@ -448,15 +466,20 @@ export default function skillGovernor(pi: ExtensionAPI): void {
   let lastProjectName: string | undefined;
   let evolutionInProgress = false;
   let governanceAuthorization: GovernanceAuthorization | null = null;
-  let consequentialAuthorization = new Set<ConsequentialAuthority>();
   const approvedSkillReads = new Set<string>();
   const approvedWrites = new Set<string>();
 
   const governedTargetScope = (absolute: string, canonical = absolute): GovernanceAuthorityScope | undefined => {
     const values = [normalizePath(absolute), normalizePath(canonical)];
     const inside = (root: string) => values.some((value) => isWithin(value, root));
+    const projectsRoot = join(paths.agentDir, "projects-memory");
+    const insideProjectSkill = values.some((value) => {
+      if (!isWithin(value, projectsRoot)) return false;
+      const segments = relative(resolve(projectsRoot), resolve(value)).split(/[\\/]/).filter(Boolean);
+      return segments.length >= 2 && segments[1]?.toLowerCase() === "skills";
+    });
     if (inside(join(paths.agentDir, "skills"))
-      || values.some((value) => value.includes("/projects-memory/") && value.includes("/skills/"))
+      || insideProjectSkill
       || inside(join(paths.agentDir, "pi-hermes-memory", "skills"))) return "skill-files";
     if (inside(join(paths.agentDir, "extensions", "skill-governor")) || inside(paths.root)) return "governor-runtime";
     if (values.includes(normalizePath(join(paths.agentDir, "extensions", "alarm-sound.ts")))) return "alarm-extension";
@@ -465,6 +488,21 @@ export default function skillGovernor(pi: ExtensionAPI): void {
   };
 
   const hasAuthorityFor = (scope: GovernanceAuthorityScope) => governanceAuthorization?.scopes.includes(scope) === true;
+
+  const governedScopesAffectedByRoot = (absolute: string, canonical = absolute): GovernanceAuthorityScope[] => {
+    const scopes = new Set<GovernanceAuthorityScope>();
+    const roots = [normalizePath(absolute), normalizePath(canonical)];
+    const contains = (target: string) => roots.some((root) => isWithin(target, root));
+    const direct = governedTargetScope(absolute, canonical);
+    if (direct) scopes.add(direct);
+    if (contains(join(paths.agentDir, "skills"))
+      || contains(join(paths.agentDir, "projects-memory"))
+      || contains(join(paths.agentDir, "pi-hermes-memory", "skills"))) scopes.add("skill-files");
+    if (contains(join(paths.agentDir, "extensions", "skill-governor")) || contains(paths.root)) scopes.add("governor-runtime");
+    if (contains(join(paths.agentDir, "extensions", "alarm-sound.ts"))) scopes.add("alarm-extension");
+    if (contains(join(paths.agentDir, "extensions", "pi-autoupdate.ts"))) scopes.add("update-extension");
+    return [...scopes];
+  };
 
   const refreshToolVisibility = () => {
     if (!config?.enabled) return;
@@ -759,6 +797,7 @@ export default function skillGovernor(pi: ExtensionAPI): void {
   pi.on("before_agent_start", latePromptHook as never);
 
   pi.on("session_start", async (_event, ctx) => {
+    governanceAuthorization = null;
     await ensureGovernorLayout(paths);
     config = await loadGovernorConfig(paths);
     lastProjectName = await projectNameForCwd(ctx.cwd);
@@ -784,8 +823,9 @@ export default function skillGovernor(pi: ExtensionAPI): void {
     if (event.source !== "extension") {
       observation = emptyObservation();
       observation.userPrompt = event.text;
-      governanceAuthorization = parseGovernanceAuthorization(event.text);
-      consequentialAuthorization = new Set(parseConsequentialAuthorization(event.text));
+      const nextAuthorization = parseGovernanceAuthorization(event.text);
+      if (nextAuthorization) governanceAuthorization = nextAuthorization;
+      else if (hasNegatedGovernanceAction(event.text)) governanceAuthorization = null;
       lastAssistantSummary = "";
     }
     return { action: "continue" };
@@ -842,62 +882,30 @@ export default function skillGovernor(pi: ExtensionAPI): void {
       observation.changedFiles.add(path);
     }
 
-    if (!["read", "write", "edit", "bash", "skill_manage", "skill_route", "skill_governor"].includes(event.toolName)) {
-      for (const value of collectInputStrings(event.input)) {
-        if (!/[\\/]|(?:skill\.md|alarm-sound\.ts|pi-autoupdate\.ts|(?:index|policy|store|llm|types)\.ts)$/i.test(value)) continue;
-        const absolute = absoluteFrom(value, ctx.cwd);
-        const canonical = await canonicalTarget(absolute);
-        const targetScope = governedTargetScope(absolute, canonical);
-        if (targetScope) {
-          return { block: true, reason: `Tool '${event.toolName}' cannot access security-sensitive ${targetScope} paths; use read/edit/write or the governed lifecycle.` };
-        }
-      }
-    }
-
     if (event.toolName === "bash") {
       const command = String((event.input as { command?: unknown }).command ?? "");
       observation.commands.push(safeCommandSummary(command));
-      const cwdInsideAgent = isWithin(ctx.cwd, paths.agentDir);
-      const mentionedScopes = new Set<GovernanceAuthorityScope>();
-      const cwdScope = governedTargetScope(ctx.cwd);
-      if (cwdScope) mentionedScopes.add(cwdScope);
-      for (const segment of splitShellSegments(command)) {
-        for (const token of shellTokens(segment)) {
-          const cleaned = token.replace(/^['"]|['"]$/g, "");
-          if (!/[\\/]|(?:alarm-sound\.ts|pi-autoupdate\.ts|(?:index|policy|store|llm|types)\.ts)$/i.test(cleaned)) continue;
-          const absolute = absoluteFrom(cleaned, ctx.cwd);
-          const scope = governedTargetScope(absolute, await canonicalTarget(absolute));
-          if (scope) mentionedScopes.add(scope);
-        }
+      const plan = shellMutationPlan(command);
+      const mutationScopes = new Set<GovernanceAuthorityScope>();
+      for (const target of plan.paths) {
+        const absolute = absoluteFrom(target, ctx.cwd);
+        const scope = governedTargetScope(absolute, await canonicalTarget(absolute));
+        if (scope) mutationScopes.add(scope);
       }
-      const mentions = (pattern: RegExp) => pattern.test(command);
-      if (mentions(/skill-governor/i)) mentionedScopes.add("governor-runtime");
-      if (mentions(/alarm-sound\.ts/i)) mentionedScopes.add("alarm-extension");
-      if (mentions(/pi-autoupdate\.ts/i)) mentionedScopes.add("update-extension");
-      if (mentions(/(?:\.pi[\\/]agent|agent)[\\/]skills|projects-memory[^\n;&|]*[\\/]skills/i)
-        || (cwdInsideAgent && /(?:^|[\s"'=])(skills|projects-memory)(?:[\\/]|\b)/i.test(command))) mentionedScopes.add("skill-files");
-      const scriptWithSensitiveTarget = mentionedScopes.size > 0 && /\b(?:python|node|powershell|pwsh|bash|sh|cmd)(?:\.exe)?\b/i.test(command);
-      const mutatesGovernedPath = mentionedScopes.size > 0 && (AGENT_MUTATION_COMMAND.test(command) || scriptWithSensitiveTarget);
-      if (config.protectActiveSkillFiles && mutatesGovernedPath) {
-        const missing = [...mentionedScopes].filter((scope) => !hasAuthorityFor(scope));
+      for (const root of plan.roots) {
+        const absolute = absoluteFrom(root, ctx.cwd);
+        const canonical = await canonicalTarget(absolute);
+        for (const scope of governedScopesAffectedByRoot(absolute, canonical)) mutationScopes.add(scope);
+      }
+      if (config.protectActiveSkillFiles && mutationScopes.size > 0) {
+        const missing = [...mutationScopes].filter((scope) => !hasAuthorityFor(scope));
         if (missing.length > 0) {
           return {
             block: true,
             reason: `Shell mutation of security-sensitive ${missing.join(", ")} files was blocked automatically; do not ask the user to approve the raw command. Use typed edit/write after a direct scope-matching request.`,
           };
         }
-        await appendEvidence(paths, { type: "explicit_user_authority", action: "governed-shell-mutation", targetScopes: [...mentionedScopes], commandHash: sha256(command) }).catch(() => undefined);
-      }
-      for (const label of classifyHighRiskShellCommand(command)) {
-        const explicitlyAuthorized = consequentialAuthorization.has(label as ConsequentialAuthority);
-        if (explicitlyAuthorized) {
-          await appendEvidence(paths, { type: "explicit_user_authority", action: label, commandHash: sha256(command) }).catch(() => undefined);
-          continue;
-        }
-        return {
-          block: true,
-          reason: `${label} was blocked automatically; no technical yes/no prompt is needed. Use a safer dedicated tool, or continue only after a direct scope-matching user request.`,
-        };
+        await appendEvidence(paths, { type: "explicit_user_authority", action: "governed-shell-mutation", targetScopes: [...mutationScopes], commandHash: sha256(command) }).catch(() => undefined);
       }
     }
   });
