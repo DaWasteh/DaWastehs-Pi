@@ -87,7 +87,9 @@ directory because Pi 0.84 tool-call IDs may contain the Windows-invalid `|`
 character. The tracked `agent/npm/patches/postinstall.cjs` applies this fix
 while Pi installs package dependencies, before the package is first loaded;
 the update extension re-checks it only during an explicitly requested later
-update. Merely starting Pi performs no package-source or OS-config mutation.
+update. Since v2.6, the check also recognizes pi-subagents' native conditional
+UUID assignment, so current safe releases no longer emit a false compatibility
+warning. Merely starting Pi performs no package-source or OS-config mutation.
 
 #### Upstream-publish-bug resilience
 

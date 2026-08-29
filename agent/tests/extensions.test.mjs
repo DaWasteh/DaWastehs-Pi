@@ -68,20 +68,37 @@ test("Pi 0.84 extension registrations and cancellation contract", async () => {
     const fixtureExecutorDir = join(fixturePackageRoot, "src", "runs", "foreground");
     const fixtureExecutorPath = join(fixtureExecutorDir, "subagent-executor.ts");
     await mkdir(fixtureExecutorDir, { recursive: true });
-    await writeFile(
-      fixtureExecutorPath,
-      'import { randomUUID } from "node:crypto";\nfunction run(_id) { const workflowRunId = _id; return workflowRunId; }\n',
-      "utf8",
-    );
-    const { patchPiSubagents } = require("../npm/patches/postinstall.cjs");
+    const vulnerableWorkflowIdSource =
+      'import { randomUUID } from "node:crypto";\nfunction run(_id) { const workflowRunId = _id; return workflowRunId; }\n';
+    const upstreamSafeWorkflowIdSource =
+      'import { randomUUID } from "node:crypto";\nfunction run(asyncWorkflow) { const workflowRunId = asyncWorkflow ? randomUUID() : undefined; return workflowRunId; }\n';
+    await writeFile(fixtureExecutorPath, vulnerableWorkflowIdSource, "utf8");
+    const {
+      hasFilesystemSafePiSubagentsAsyncWorkflowId: postinstallRecognizesSafeWorkflowId,
+      patchPiSubagents,
+    } = require("../npm/patches/postinstall.cjs");
+    assert.equal(postinstallRecognizesSafeWorkflowId(vulnerableWorkflowIdSource), false);
     const fixturePatch = patchPiSubagents(fixturePackageRoot);
     assert.equal(fixturePatch.changed, true);
-    assert.match(await readFile(fixtureExecutorPath, "utf8"), /const workflowRunId = randomUUID\(\);/);
+    const legacyPatchedWorkflowIdSource = await readFile(fixtureExecutorPath, "utf8");
+    assert.match(legacyPatchedWorkflowIdSource, /const workflowRunId = randomUUID\(\);/);
+    assert.equal(postinstallRecognizesSafeWorkflowId(legacyPatchedWorkflowIdSource), true);
+
+    // Current pi-subagents versions already use a conditional UUID. It must be
+    // recognized as safe rather than producing the updater's compatibility warning.
+    await writeFile(fixtureExecutorPath, upstreamSafeWorkflowIdSource, "utf8");
+    assert.equal(postinstallRecognizesSafeWorkflowId(upstreamSafeWorkflowIdSource), true);
+    const upstreamSafePatch = patchPiSubagents(fixturePackageRoot);
+    assert.equal(upstreamSafePatch.changed, false);
+    assert.equal(await readFile(fixtureExecutorPath, "utf8"), upstreamSafeWorkflowIdSource);
 
     const heimdallPath = join(temporaryAgentDir, "heimdall.json");
     const driftedSandbox = process.platform !== "linux";
     await writeFile(heimdallPath, JSON.stringify({ sandbox: { enabled: driftedSandbox } }), "utf8");
     const updateModule = await import("../extensions/pi-autoupdate.ts");
+    assert.equal(updateModule.hasFilesystemSafePiSubagentsAsyncWorkflowId(vulnerableWorkflowIdSource), false);
+    assert.equal(updateModule.hasFilesystemSafePiSubagentsAsyncWorkflowId(legacyPatchedWorkflowIdSource), true);
+    assert.equal(updateModule.hasFilesystemSafePiSubagentsAsyncWorkflowId(upstreamSafeWorkflowIdSource), true);
     assert.deepEqual(updateModule.parsePiUpdateAuthorization("Bitte Pi und die Extensions aktualisieren."), { scope: "all", force: false });
     assert.deepEqual(updateModule.parsePiUpdateAuthorization("Bitte nur die Extensions aktualisieren."), { scope: "extensions", force: false });
     assert.deepEqual(updateModule.parsePiUpdateAuthorization("Bitte Pi neu installieren und das erzwingen."), { scope: "self", force: true });

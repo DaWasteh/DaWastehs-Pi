@@ -3,9 +3,16 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
+/** Recognize workflow IDs that are always either a UUID or absent. */
+function hasFilesystemSafePiSubagentsAsyncWorkflowId(source) {
+  return /\bconst\s+workflowRunId\s*=\s*(?:randomUUID\(\)|[^\r\n;?]+\?\s*randomUUID\(\)\s*:\s*undefined)\s*;/.test(source);
+}
+
 /**
  * Keep pi-subagents async workflow directories valid on Windows.
  * Pi 0.84 tool-call IDs may contain `|`, so they cannot be path components.
+ * Current pi-subagents releases already use a conditional UUID assignment;
+ * only the legacy `_id` implementation still needs rewriting.
  */
 function patchPiSubagents(packageRoot = path.join(__dirname, "..", "node_modules", "pi-subagents")) {
   const executorPath = path.join(
@@ -21,7 +28,7 @@ function patchPiSubagents(packageRoot = path.join(__dirname, "..", "node_modules
   }
 
   const source = fs.readFileSync(executorPath, "utf8");
-  if (/const workflowRunId\s*=\s*randomUUID\(\);/.test(source)) {
+  if (hasFilesystemSafePiSubagentsAsyncWorkflowId(source)) {
     return { found: true, changed: false, path: executorPath };
   }
 
@@ -46,4 +53,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { patchPiSubagents };
+module.exports = { hasFilesystemSafePiSubagentsAsyncWorkflowId, patchPiSubagents };

@@ -108,6 +108,11 @@ export function updateAuthorizationAllows(
   return !!authorization && scopeAllowed && (!force || authorization.force);
 }
 
+/** Recognize workflow IDs that are always either a UUID or absent. */
+export function hasFilesystemSafePiSubagentsAsyncWorkflowId(source: string): boolean {
+  return /\bconst\s+workflowRunId\s*=\s*(?:randomUUID\(\)|[^\r\n;?]+\?\s*randomUUID\(\)\s*:\s*undefined)\s*;/.test(source);
+}
+
 export default async function (pi: ExtensionAPI) {
   let pendingUpdateAuthorization: PiUpdateAuthorization | null = null;
   pi.on("input", async (event) => {
@@ -350,7 +355,8 @@ export default async function (pi: ExtensionAPI) {
   /**
    * Pi 0.84 tool-call ids may contain `|`, which is illegal in Windows path
    * components. pi-subagents 0.43 used that id directly as an async workflow
-   * directory name. Give workflows their own UUID, as ordinary async runs do.
+   * directory name. Newer releases assign a UUID only for async workflows;
+   * recognize both that upstream form and the unconditional legacy patch.
    */
   async function patchPiSubagentsAsyncWorkflowId(
     packageRoot: string,
@@ -368,7 +374,7 @@ export default async function (pi: ExtensionAPI) {
       };
     }
 
-    if (/const workflowRunId\s*=\s*randomUUID\(\);/.test(source)) {
+    if (hasFilesystemSafePiSubagentsAsyncWorkflowId(source)) {
       return { found: true, ok: true, message: `✅ ${PI_SUBAGENTS_PACKAGE_NAME} async workflow IDs are filesystem-safe.` };
     }
     if (!source.includes("const workflowRunId = _id;")) {
