@@ -1,8 +1,8 @@
 # Pi configuration (`~/.pi`)
 
 Personal configuration for the [Pi coding agent](https://pi.dev): a custom
-theme, five local TypeScript extensions, governed procedural skills, and a few
-installed pi packages.
+theme, six local TypeScript extensions, lazily routed procedural skills, and a
+few installed pi packages.
 
 ![Header](image.png)
 
@@ -11,30 +11,30 @@ installed pi packages.
 ```text
 ~/.pi/
 ├── README.md                  # this file
+├── PLAN.md                    # current complex-task state
 ├── agent/
 │   ├── settings.json          # global settings (provider, model, packages, theme)
 │   ├── pix.json               # pix extension state/config
 │   ├── heimdall.example.json  # portable example; real heimdall.json is OS-local
-│   ├── agents/                # custom routed roles (Mechanic, Bugtester, …)
+│   ├── agents/                # custom roles; model routing lives in settings.json
+│   ├── prompts/plan.md        # lazy /plan workflow template
+│   ├── skills/                # global reusable Pi skills
+│   ├── projects-memory/
+│   │   └── <project>/skills/  # project-scoped reusable Pi skills
 │   ├── npm/
 │   │   ├── package.json       # installed pi package manifest
 │   │   └── package-lock.json  # installed pi package lockfile
 │   ├── package.json           # editor-only devDependencies (see "Editor setup")
 │   ├── tsconfig.json          # editor-only TS config (see "Editor setup")
-│   ├── pi-hermes-memory/
-│   │   └── skills/            # global reusable Pi skills (published)
-│   ├── projects-memory/
-│   │   └── <project>/skills/   # project-scoped reusable Pi skills (published)
 │   ├── extensions/            # auto-discovered local extensions (*.ts)
 │   │   ├── alarm-sound.ts
 │   │   ├── pi-autoupdate.ts
-│   │   ├── skill-governor/    # lifecycle governance, routing, audit, quarantine
+│   │   ├── post-edit-validation.ts
+│   │   ├── skill-governor/    # metadata router and deterministic audit
 │   │   ├── stargate-header.ts
 │   │   └── token-speed.ts
-│   ├── skill-governor/
-│   │   └── config.json        # tracked policy; candidates/evidence stay local
-│   └── themes/
-│       └── stargate-sg1.json  # custom theme
+│   ├── skill-governor/config.json
+│   └── themes/stargate-sg1.json
 ```
 
 Extensions placed in `~/.pi/agent/extensions/*.ts` are auto-discovered for all
@@ -136,59 +136,77 @@ Custom footer showing context usage with a progress bar, measured generation
 speed (tokens/second), the active thinking level, and estimated thinking and
 output token counts, with the model and git branch right-aligned.
 
+### `post-edit-validation.ts`
+
+Uses Pi 0.84.4's native `tool_result` event to collect successful `write` and
+`edit` paths, then validates the final batch at `turn_end` after parallel tools
+settle. Checks are deterministic and check-only: JSON parsing, skill audit,
+TypeScript `--noEmit` through the trusted agent compiler when a config exists,
+Node syntax, and optional Python/PowerShell/shell parsing. It never executes an
+edited test/module, package install, formatter-write, generic full suite, or
+network operation.
+
+All in-process checks run; grouped TypeScript checks take priority within an
+eight-command external-validator ceiling. Any overflow is an explicit failure
+listing unvalidated files, never silent success. Success is silent. A failure is
+persisted and delivered to the next model turn as bounded structured negative
+feedback. At most two automatic repair-feedback rounds are sent per user turn;
+further failures stop the loop and remain visible as status/evidence.
+
 ### `skill-governor/`
 
-Applies lifecycle governance to procedural skills without patching package
-extensions. Per task it exposes at most five positively matched automatic skill
-descriptions; unmatched auto skills stay lazy-searchable. Manual/canary text is
-read-only and can be loaded without a popup; the actions described inside remain
-separately guarded. It blocks direct `skill_manage` mutations, writes new
-procedures to an undiscovered candidate store, and requires three distinct
-recurring observations before automatic generation. Generator/critic calls stay
-on the current provider by default; static audit, independent criticism,
-subtractive repair, digest-bound evidence, canary, qualified activation,
-retirement, and rollback form separate lifecycle gates.
+A lean metadata router, not an authority or sandbox. It ranks every current-scope
+skill—including manual skills—without loading bodies. Cloud prompts receive at
+most three matching descriptions; interactive local models receive one to keep
+the system-prompt string under the measured budget. A selected manual skill is
+made normally readable; reading instructions grants no additional authority.
 
-Commands:
+The small `capability_route` tool searches hidden skill metadata and, only in an
+interactive local profile, tools that this Governor itself removed. It never
+enables a tool that was already inactive or blocked. Returned descriptions are
+bounded to 320 characters. Interactive llama.cpp/Ollama/LM Studio/vLLM/SGLang
+sessions initially expose only configured core tools plus `capability_route`;
+cloud and headless sessions keep their configured tools. `/skill-governor`
+provides read-only status, search, and file audit. There is no automatic LLM
+evolution, candidate store, active-skill read blockade, shell parser, or
+confirmation UI.
 
-- `/skill-governor status|candidates` — inspect the current library/candidate state
-- `/skill-governor audit <name>` — run the paper-derived static triage
-- `/skill-governor evolve` — force a candidate proposal from the latest task
-- `/skill-governor evidence <id> <json-file>` — import digest-bound paired evidence
-- `/skill-governor promote <id> [canary|active] [--override]` — explicit promotion; incomplete active qualification needs the deliberate override flag
-- `/skill-governor retire <name> <reason>` / `rollback <id>` — reversible removal
-- `/skill-governor allow-write <path>` — authorize exactly one ordinary edit/write
+With installed Pi 0.84.4 and the current `.pi` scope, the native automatic-skill
+prompt measured 7,924 characters (about 1,981 via coarse `chars / 4`). Ordinary
+local sessions now replace that boilerplate with a read-first prompt and one
+compact, untruncated metadata record only when the complete UTF-8 string remains
+at most 900 bytes. This leaves framing margin while conservatively staying below
+1,000 tokens for the target byte-based tokenizers; skill bodies remain lazy. An explicit CLI
+`customPrompt`/`appendSystemPrompt` has higher precedence and is never truncated;
+tool schemas and chat framing are separate provider input. The old v2.4 model
+benchmark was not rerun or relabeled as v2.7 evidence.
 
-The v2.5 low-noise policy confines runtime interception to actual file-tool or
-shell mutations of governor-owned paths. Opaque inputs for Todo, web research,
-subagents, memory, MCP, and Intercom are never reinterpreted as filesystem
-paths; Windows containment also rejects cross-volume `path.relative()` results
-instead of treating another drive as part of `~/.pi`. Test names and prose that
-mention the governor remain usable.
+## Complex work and session branches
 
-Ordinary repository commands—including requested dependency and release work—
-remain bounded by the user's task and by the dedicated tool executing them;
-skill-governor no longer acts as a second global shell permission system. A
-direct request to edit skills or the governor is still scope-bound, survives
-informational follow-ups, and can be explicitly revoked. If a genuine decision
-could cause irreversible loss, credential exposure, or effects outside the
-requested scope, the agent asks one plain-language question instead of exposing
-a raw command approval dialog.
+Invoke `/plan [objective]` for work with at least three dependent steps or a
+likely compaction/session boundary. The lazy prompt creates or resumes root
+`PLAN.md`, keeps exactly one step active, and records verified decisions,
+checks, and blockers. Small tasks skip the file.
 
-The `skill_route` and `skill_governor` model tools expose controlled lazy
-routing and candidate submission. Runtime candidates, evidence, snapshots, and
-retired copies stay local under `agent/skill-governor/`; only `config.json` is
-tracked. On Windows this is strong tool-layer defense-in-depth, not an OS
-security boundary, because Pi and extensions still run as the logged-in user.
+Use Pi's native `/tree` to explore an alternative from the last sound decision;
+update `PLAN.md` and inspect `git status` first because conversation branches do
+not restore shared files. `/fork` or `/clone` creates a separate session, not a
+filesystem worktree. Concurrent writers therefore require isolated worktrees;
+otherwise keep one writer.
 
 ## Installed packages
 
 Declared in `settings.json` (and/or user settings). See each package upstream
 for details:
 
-- `npm:pi-llama-cpp` — local llama.cpp provider integration
-- `npm:pi-mcp-adapter` — MCP server adapter
-- `npm:pi-web-access` — web access tools
+- `pi-llama-cpp` — local llama.cpp provider/model integration
+- `pi-mcp-adapter`, `pi-web-access` — MCP and web tools
+- `pi-hermes-memory` — durable memory policy/store
+- `pi-subagents`, `pi-intercom` — child-agent and peer-session coordination
+- `@juicesharp/rpiv-{todo,i18n,ask-user-question}` — task/UI helpers
+- `@casualjim/pi-heimdall` — platform sandbox integration
+- `@gaodes/pi-graphify`, `@xynogen/pix-optimizer` — graph and prompt/context helpers
+- `pi-prompt-template-model` — prompt-template model selection
 
 The current installed package manifest is also tracked in
 `agent/npm/package.json` / `agent/npm/package-lock.json` so the repository
@@ -219,7 +237,7 @@ and environment files are excluded defensively as well.
 Reusable Pi skills are intentionally tracked because they can help other users
 even on different systems:
 
-- `agent/pi-hermes-memory/skills/**/SKILL.md` — global skills
+- `agent/skills/**/SKILL.md` — global skills
 - `agent/projects-memory/*/skills/**/SKILL.md` — project-scoped skills
 
 Only the skill files are published; private memory files and session databases
@@ -244,9 +262,32 @@ Key fields in `agent/settings.json`:
 - `thinkingBudgets` / `defaultThinkingLevel` — reasoning token budgets per level
 - `subagents` — central role-to-model routing and local fallback policy
 
+Compaction reserves 32,768 tokens and keeps the most recent 32,768. The former
+131,072-token keep window exceeded Pi's 128,000-token llama fallback threshold
+once the reserve was subtracted, so it could not reliably free context. Durable
+task state belongs in `PLAN.md`, not an oversized recent-message tail. Thinking
+budgets use Pi's documented 1,024 / 4,096 / 10,240 / 32,768 progression instead
+of the former 2,048 / 8,192 / 32,768 / 65,536 allocation.
+
+### Local model profile
+
+The router recognizes local provider IDs/loopback URLs rather than hard-coding
+unavailable model aliases. Public checkpoint/API names verified for this release
+are `Qwen/Qwen3.8-27B`, `Qwen/Qwen3.8-Flash-Next`,
+`google/gemma-4-31B-it`, and Mistral's `mistral-medium-3-5`; llama.cpp model IDs
+remain whatever `/v1/models` actually exposes. Qwen aliases currently present in
+`modelThinkingLevels` use medium reasoning. Other aliases are not invented while
+the local server is offline.
+
+All local families share the same short tool discipline: schema-valid arguments,
+real tool results as ground truth, and correction of validator errors before a
+success claim. No source reviewed for v2.7 established a reliable
+family-specific prompt advantage, so separate Gemma/Mistral/Qwen prose profiles
+would add unsupported complexity.
+
 ### Subagent model hierarchy
 
-The parent orchestrator stays on GPT-5.6 Sol High. Child roles use the cheapest
+The parent orchestrator starts on GPT-5.6 Sol Max. Child roles use the cheapest
 appropriate tier without per-run model overrides:
 
 | Tier | Intended work | Roles |
@@ -299,10 +340,12 @@ disappear too, because the callback parameter types are inferred from the pi
 API.
 
 For a clean checkout, also restore the tracked Pi runtime manifest; its
-postinstall hook applies required package compatibility patches before loading:
+postinstall hook applies required package compatibility patches before loading.
+The legacy-peer flag matches Pi's managed installer and avoids installing stale
+host-provided `@earendil-works/pi-*` peers into the extension directory:
 
 ```bash
-npm --prefix npm install
+npm --prefix npm install --legacy-peer-deps
 ```
 
 Validate both the local extensions and runtime dependency set with:
@@ -310,6 +353,7 @@ Validate both the local extensions and runtime dependency set with:
 ```bash
 npm run typecheck
 npm test
+npm run skill:lint
 npm audit --omit=dev
 npm --prefix npm audit --omit=dev
 ```

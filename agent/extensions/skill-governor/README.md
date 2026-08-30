@@ -1,70 +1,51 @@
 # Skill Governor
 
-Local Pi extension implementing a governed procedural-skill lifecycle without
-modifying package-owned extensions.
+A small Pi 0.84.4 resource extension for deterministic, prompt-budget-conscious
+skill routing. It uses native `resources_discover`, `before_agent_start`,
+`formatSkillsForPrompt`, and dynamic active-tool APIs; it does not grant
+permissions, intercept file or shell operations, or evolve skills automatically.
 
-## Runtime policy
+## Behavior
 
-Automatic evolution/canary/activation are off in code defaults. This user's
-tracked `agent/skill-governor/config.json` explicitly opts into the full
-lifecycle (`userApprovedAt`) while retaining recurrence, same-provider, audit,
-critic, and evidence gates.
+- Metadata ranking is deterministic and includes manual skills. English/German
+  inflection prefixes of at least three characters supplement exact matching;
+  exact name matches remain stronger.
+- Cloud prompts receive at most three matching descriptors. With no explicit
+  `customPrompt` or `appendSystemPrompt`, interactive local sessions replace
+  Pi's verbose default with a concise read-first ASCII prompt and admit at most
+  one deterministic compact metadata record only when the full UTF-8 string is
+  at most `routing.maxLocalSystemPromptBytes` (900 by default). The local
+  record contains the complete untruncated skill name, description, and absolute
+  path, followed by a short instruction to read that path when relevant.
+  Control characters and XML delimiters are escaped so metadata cannot break its
+  record. If that complete record would exceed the cap, it is omitted and
+  `capability_route` remains available. Cloud prompts retain native
+  `formatSkillsForPrompt` `<skill>` blocks. Only non-empty explicit custom/append
+  prompts take precedence: after removal of Pi's native skill block they are
+  preserved exactly, never truncated; an oversized explicit prompt receives no Governor
+  addition. Tool schemas are separate provider input and outside this
+  system-prompt byte bound.
+- Matched manual skills are normally readable through Pi progressive disclosure;
+  reading instructions grants no consequential authority.
+- `capability_route` reports bounded (320-character) metadata. In cloud or
+  headless sessions it routes skills only. In interactive local sessions it may
+  restore only tools removed by this governor's current local profile; tools
+  initially inactive or blocked by configuration are never candidates.
+- Local profile transitions restore only the governor-owned removal delta, not a
+  stale whole-tool snapshot. A restored cloud baseline is no longer treated as a
+  routed addition; only still-local routed tools are removed on the next
+  non-extension user input.
+- `/skill-governor` is a read-only status/search/audit command. Static audit and
+  `skill:lint` are deterministic checks, not a sandbox or security boundary.
 
-- Task-route at most `routing.maxAutoSkills` automatic descriptions with a
-  positive lexical score.
-- Keep unmatched automatic skills available through `skill_route`. Manual and
-  canary bodies may be read without a popup because reading instructions is not
-  permission to execute their consequential actions.
-- Remove `skill_manage` from active model tools and block direct mutations.
-- Store generated candidates outside all Pi skill-discovery roots.
-- Require distinct recurrent observations before automatic generation.
-- Default to same-provider generator/critic calls; task text is redacted and
-  bounded before the side-channel request.
-- Fail closed on malformed critic output, secret/injection findings, digest
-  drift, stale evidence, duplicate task/run evidence, or failed candidate runs.
-- Promote low-risk candidates to manual canary first. Automatic active promotion
-  additionally requires digest-bound evidence from unique paired tasks.
+## Measurement and benchmark note
 
-## Evidence import
+On 2026-08-30, the installed Pi 0.84.4 native auto-skill prompt measured 7,924
+characters (about 1,981 by coarse `chars / 4`). v2.7 does not use that verbose
+default for ordinary interactive local sessions: `Buffer.byteLength` enforces a
+900-byte complete Governor-generated prompt. This leaves room below 1,000 tokens for provider role framing while remaining a conservative byte bound
+for the target byte-fallback tokenizers, while provider tool schemas remain
+separate.
 
-`/skill-governor evidence <candidate-id> <json-file>` accepts one object or an
-array. Every record must match the current candidate digest:
-
-```json
-{
-  "taskId": "fixture-1",
-  "runId": "2026-08-17-a",
-  "evaluator": "pi-skill-benchmark-v1",
-  "candidateSha256": "<64 hex chars>",
-  "baselinePassed": false,
-  "candidatePassed": true,
-  "utilityDelta": 1,
-  "tokenRatio": 0.9,
-  "timeRatio": 0.9,
-  "hardSafetyViolation": false,
-  "recordedAt": "2026-08-17T00:00:00.000Z"
-}
-```
-
-Authority actions remain explicit user slash commands, without a redundant
-technical yes/no popup. Incomplete active promotion fails closed unless the user
-repeats the command with `--override`. Promotion, retirement, and rollback reload
-Pi resources after durable state changes.
-
-The low-noise permission policy guards actual file-tool and shell mutations of
-governor-owned paths. It does not scan opaque custom-tool payloads or treat
-messages, test names, and paths on another Windows volume as governed files.
-Ordinary repository commands remain governed by the user's task and the tool
-that executes them; skill-governor is intentionally not a global shell gate.
-
-## Security boundary
-
-Tool hooks, canonical paths, reparse-point checks, digest validation, and
-failure-atomic moves are defense-in-depth. On Windows, Pi, extensions, and shell
-commands still run as the same logged-in user; same-user hostile code can race
-or bypass text-level interception. Use a separate OS identity, VM, or supported
-filesystem/process sandbox when the task itself is untrusted.
-
-The design is informed by arXiv:2608.11888 (differential skill failures) and
-arXiv:2608.12851 (skill misevolution/lifecycle governance). Their benchmark
-thresholds are not assumed to transfer unchanged to this Pi setup.
+The differential LLM benchmark was not rerun for v2.7; historic v2.4 rows are
+not v2.7 release evidence.

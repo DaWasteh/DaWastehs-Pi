@@ -7,7 +7,6 @@ import { validateResultRows } from "./result-schema.mjs";
 const REPO = resolve(fileURLToPath(new URL("../../..", import.meta.url)));
 const DEFAULT_INPUT = resolve(REPO, "agent/benchmarks/skill-governor/results/raw-v2.4-final.jsonl");
 const DEFAULT_OUTPUT = resolve(REPO, "agent/benchmarks/skill-governor/reports/v2.4-benchmark.md");
-const DEFAULT_EVOLUTION_PROBE = resolve(REPO, "agent/benchmarks/skill-governor/results/evolution-probe.json");
 
 function args(argv) {
   const options = { input: DEFAULT_INPUT, output: DEFAULT_OUTPUT };
@@ -123,9 +122,11 @@ async function main() {
     "",
     `Generated: ${new Date().toISOString()}`,
     "",
+    "> Historical v2.4 experiment. These rows were not rerun for v2.7 and are not v2.7 release evidence.",
+    "",
     "## Design",
     "",
-    "Eight deterministic disposable fixtures are executed three times per condition with the same model, thinking level, three file tools (`read`, `edit`, `write`), and verifier. Condition order is deterministically rotated by case/replicate. Conditions vary only the skill metadata/policy: no skills, the v2.3 skill snapshot, the v2.4 task-routed auto metadata plus compact policy, or one forced v2.4 target body. The full governor runtime/evolution is validated separately by unit/integration tests and the evolution probe; this table is not a complete lifecycle benchmark. Fresh fixtures expose no shell or symlink-creation tool, and file-tool paths are confined to the fixture/read-only skill corpus.",
+    "Eight deterministic disposable fixtures are executed three times per condition with the same model, thinking level, three file tools (`read`, `edit`, `write`), and verifier. Condition order is deterministically rotated by case/replicate. Conditions vary only the historical intervention: no skills, the v2.3 skill snapshot, v2.4 task-routed automatic metadata plus its compact policy, or one forced v2.4 target body. Fresh fixtures expose no shell or symlink-creation tool, and file-tool paths are confined to the fixture/read-only skill corpus. This does not exercise the v2.7 runtime.",
     "",
     `Raw JSONL SHA-256: \`${rawSha256}\``,
     `Published redacted run table SHA-256: \`${publicSha256}\``,
@@ -173,7 +174,7 @@ async function main() {
     "## Differential triage",
     "",
     `- Functional regressions versus a passing no-skill replicate: **${functional.length}**`,
-    `- Paper-style 2× efficiency threshold flags (both token/time increase; one >2× versus no-skill): **${efficiency.length}**`,
+    `- Deterministic 2× efficiency flags (both token/time increase; one >2× versus no-skill): **${efficiency.length}**`,
     `- Flags by condition: v2.3 **${efficiencyByCondition["v2.3"]}**, v2.4-routed **${efficiencyByCondition["v2.4-routed"]}**, forced-skill **${efficiencyByCondition["forced-skill"]}**`,
     "- These are deterministic threshold flags, not confidence intervals or proof of causal safety.",
   );
@@ -186,22 +187,6 @@ async function main() {
     for (const item of efficiency) lines.push(`- ${item.caseId} run ${item.replicate}: ${item.condition}, tokens ${fmt(item.tokenRatio, 2)}×, time ${fmt(item.timeRatio, 2)}×`);
   }
 
-  try {
-    const probe = JSON.parse(await readFile(DEFAULT_EVOLUTION_PROBE, "utf8"));
-    lines.push(
-      "",
-      "## Evolution pipeline probe",
-      "",
-      `- Generator: **${probe.generatorModel}**`,
-      `- Independent critic: **${probe.criticModel}**`,
-      `- Quarantined proposal: **${probe.candidate?.name ?? "n/a"}** (${probe.candidate?.scope ?? "n/a"})`,
-      `- Static audit: **${probe.staticAudit?.pass ? "PASS" : "BLOCK"}**, score ${probe.staticAudit?.score ?? "n/a"}, inferred risk ${probe.staticAudit?.risk ?? "n/a"}`,
-      `- Critic: **${String(probe.critic?.decision ?? "n/a").toUpperCase()}**, risk ${probe.critic?.risk ?? "n/a"}, confidence ${probe.critic?.confidence ?? "n/a"}`,
-    );
-  } catch {
-    lines.push("", "## Evolution pipeline probe", "", "Not run for this report.");
-  }
-
   lines.push(
     "",
     "## Limitations",
@@ -209,8 +194,8 @@ async function main() {
     "- These fixtures are controlled regressions, not proof that every future task is safe.",
     "- Model runs remain stochastic; three repeats reduce but do not remove variance.",
     "- Verifiers cover explicit task contracts and observable commands, not every semantic quality dimension.",
-    "- The paper's benchmark thresholds are reported for comparison and are not treated as universal production limits.",
-    "- Primary-method references: arXiv:2608.11888 (differential skill-failure triage) and arXiv:2608.12851 (skill lifecycle governance/misevolution).",
+    "- The 2× flag is a local diagnostic threshold, not a universal production limit.",
+    "- The experiment predates the v2.7 router and cannot establish its quality or savings.",
     "",
   );
   await mkdir(dirname(options.output), { recursive: true });

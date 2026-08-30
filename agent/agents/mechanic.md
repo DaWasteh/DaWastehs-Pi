@@ -2,8 +2,6 @@
 name: mechanic
 description: Behebt kleine offensichtliche Bugs und erledigt mechanische Repo-Aufgaben unter 128k Tokens.
 tools: read, grep, find, ls, bash, edit, write
-model: openai-codex/gpt-5.3-codex-spark
-thinking: low
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: true

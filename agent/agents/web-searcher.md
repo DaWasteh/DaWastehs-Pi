@@ -2,8 +2,6 @@
 name: web-searcher
 description: Sucht aktuelle Primärquellen im Web und liefert eine knappe, zitierfähige Evidenzübersicht.
 tools: web_search, fetch_content, get_search_content, read, grep, find, ls, bash
-model: openai-codex/gpt-5.6-luna
-thinking: low
 systemPromptMode: replace
 inheritProjectContext: true
 inheritSkills: true
