@@ -49,6 +49,16 @@ async function startFakeGateway(options = {}) {
 			}
 			if (req.url === "/api/v1/models") return send(res, 200, { models: state.models, ...status() });
 			if (req.url === "/api/v1/status") return send(res, 200, status());
+			if (req.url === "/api/v1/runtimes") {
+				return send(res, 200, {
+					runtimes: [
+						{ id: "b10786-vulkan-llama-cpp", label: "b10786_vulkan_llama.cpp", backend: "vulkan", build: "b10786" },
+						{ id: "b10786-hip-llama-cpp", label: "b10786_hip_llama.cpp", backend: "hip", build: "b10786" },
+					],
+					default_runtime_id: "b10786-vulkan-llama-cpp",
+					active_runtime: state.active ? "b10786-hip-llama-cpp" : null,
+				});
+			}
 			if (req.url === "/api/v1/switch" && req.method === "POST") {
 				const model = state.models.find((m) => m.id === body.model_id);
 				if (!model) return error(res, 404, `Unknown AutoTuner model ID: ${body.model_id}`, "model_not_found");
@@ -315,7 +325,7 @@ test("model_select pre-switches through the control API and before_provider_requ
 		assert.equal(result, undefined);
 		const switches = gateway.calls.filter((call) => call.path === "/api/v1/switch");
 		assert.equal(switches.length, 1);
-		assert.deepEqual(switches[0].body, { model_id: "qwen3.8-27b" });
+		assert.deepEqual(switches[0].body, { model_id: "qwen3.8-27b", timeout_s: 900 }, "the client states the documented 900 s health wait explicitly");
 		assert.equal(switches[0].auth, `Bearer ${TOKEN}`);
 		assert.equal(gateway.state.active, "qwen3.8-27b");
 		assert.ok(notifications.some((entry) => entry.level === "info" && /bereit/.test(entry.message)));
@@ -397,6 +407,11 @@ test("/autotuner command reports status, lists the catalogue, switches with Pi a
 
 		await command.handler("health", ctx);
 		assert.match(notifications.at(-1).message, /ok \(v5\.3\.9\)/);
+
+		await command.handler("runtimes", ctx);
+		const runtimes = notifications.at(-1).message.split("\n");
+		assert.match(runtimes[0], /^◆ b10786_vulkan_llama\.cpp \(vulkan, b10786\) — b10786-vulkan-llama-cpp$/);
+		assert.match(runtimes[1], /^○ b10786_hip_llama\.cpp \(hip, b10786\) — b10786-hip-llama-cpp$/);
 
 		await command.handler("bogus", ctx);
 		assert.match(notifications.at(-1).message, /Unbekanntes Unterkommando/);

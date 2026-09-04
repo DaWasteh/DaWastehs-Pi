@@ -142,8 +142,13 @@ per-model launch setting; the extension only asks for a model ID.
 - **`/autotuner`.** Without arguments it opens an interactive switcher built
   from `GET /api/v1/models`, marking the active model (●), runnable ones (○), and
   non-runnable entries (✗) with AutoTuner's reason. `status`, `models`,
-  `switch <id>`, `stop`, `refresh`, `health`, and `help` are the subcommands; a
-  successful switch also activates the model in Pi.
+  `switch <id>`, `stop`, `runtimes`, `refresh`, `health`, and `help` are the
+  subcommands; a successful switch also activates the model in Pi. `runtimes`
+  lists the llama-server builds AutoTuner knows (● active, ◆ toolbar default);
+  the toolbar selection itself is left to the user, so switches never pass a
+  `runtime_id`. Each switch states AutoTuner's documented 900-second health
+  wait explicitly (`timeout_s`) and the client waits slightly longer, so a slow
+  load is reported by the gateway's `switch_timeout` rather than a socket error.
 - **Credentials.** Environment (`AUTOTUNER_API_URL` + `AUTOTUNER_API_KEY`, or
   `AUTOTUNER_CONTROL_API_PORT`/`AUTOTUNER_CONTROL_API_KEY`) wins, then the
   `control_api.json` sidecar AutoTuner ≥ 5.3.9 writes next to its settings,

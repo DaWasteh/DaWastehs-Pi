@@ -49,14 +49,20 @@ const MAX_RESPONSE_BYTES = 4 * 1024 * 1024;
 const MAX_CATALOGUE_ENTRIES = 10_000;
 const DISCOVERY_TIMEOUT_MS = 4_000;
 const CONTROL_TIMEOUT_MS = 6_000;
-/** AutoTuner itself waits up to 300 s for llama-server's /health. */
-const SWITCH_TIMEOUT_MS = 330_000;
+/**
+ * AutoTuner waits `timeout_s` (default 900 s since 5.3.9) for llama-server's
+ * /health. The client sends that value explicitly and stays slightly above it
+ * so the gateway, not a socket timeout, reports a slow load.
+ */
+const SWITCH_TIMEOUT_S = 900;
+const SWITCH_TIMEOUT_MS = (SWITCH_TIMEOUT_S + 20) * 1000;
 const COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
 const SUBCOMMANDS: AutocompleteItem[] = [
 	{ value: "status", label: "status", description: "Gateway- und Modellstatus anzeigen" },
 	{ value: "models", label: "models", description: "Alle erkannten Modelle mit Lauffähigkeit auflisten" },
 	{ value: "switch", label: "switch", description: "switch <model-id>: Modell über AutoTuner laden und aktivieren" },
 	{ value: "stop", label: "stop", description: "API-verwalteten llama-server stoppen" },
+	{ value: "runtimes", label: "runtimes", description: "Verfügbare llama-server-Builds (Runtimes) auflisten" },
 	{ value: "refresh", label: "refresh", description: "Zugangsdaten neu lesen und Modellliste aktualisieren" },
 	{ value: "health", label: "health", description: "Erreichbarkeit des Gateways ohne Token prüfen" },
 	{ value: "help", label: "help", description: "Verwendung anzeigen" },
@@ -364,8 +370,24 @@ export interface GatewayStatus {
 	endpoint: string;
 	/** Additive fields since AutoTuner 5.3.9. */
 	ready?: boolean;
-	backend_url?: string;
-	alias?: string;
+	backend_url?: string | null;
+	alias?: string | null;
+	active_runtime?: string | null;
+	default_runtime_id?: string | null;
+	runtime?: { id?: string; label?: string; backend?: string; build?: string } | null;
+}
+
+export interface GatewayRuntime {
+	id: string;
+	label?: string;
+	backend?: string;
+	build?: string;
+}
+
+interface RuntimesResponse {
+	runtimes?: unknown;
+	default_runtime_id?: string | null;
+	active_runtime?: string | null;
 }
 
 export interface CatalogueModel {
@@ -473,8 +495,10 @@ export function describeError(error: unknown, gateway?: GatewayConfig): string {
 				return "AutoTuner lehnt den Token ab. Token in AutoTuner regeneriert? Dann /autotuner refresh.";
 			case "model_busy":
 				return "Das aktive Modell bearbeitet noch Requests; der Wechsel wird nach deren Ende wiederholt.";
+			case "autotuner_busy":
+				return "AutoTuner ist durch einen exklusiven Benchmark- oder OCR-Lauf belegt; den Wechsel später erneut versuchen.";
 			case "switch_timeout":
-				return "AutoTuner hat den Modellstart nicht innerhalb von 300 s abgeschlossen (Timeout).";
+				return `AutoTuner hat den Modellstart nicht innerhalb von ${SWITCH_TIMEOUT_S} s abgeschlossen (Timeout).`;
 			default:
 				return `${error.message} [${error.code}]`;
 		}
@@ -517,10 +541,23 @@ export function formatStatus(status: GatewayStatus, gateway: GatewayConfig, name
 	}
 	lines.push(`Gateway ${gateway.root} · Quelle ${gateway.source}`);
 	if (status.backend_url) lines.push(`llama-server ${status.backend_url}${status.alias ? ` · Alias ${status.alias}` : ""}`);
+	const runtimeLabel = status.runtime?.label ?? status.active_runtime;
+	if (runtimeLabel) lines.push(`Build ${runtimeLabel}${status.runtime?.backend ? ` (${status.runtime.backend})` : ""}`);
 	if (typeof status.inflight_requests === "number" && status.inflight_requests > 0) {
 		lines.push(`${status.inflight_requests} laufende Requests`);
 	}
 	return lines.join("\n");
+}
+
+export function formatRuntimes(payload: RuntimesResponse): string[] {
+	const runtimes = Array.isArray(payload.runtimes)
+		? payload.runtimes.filter((entry): entry is GatewayRuntime => !!entry && typeof entry === "object" && typeof (entry as GatewayRuntime).id === "string")
+		: [];
+	return runtimes.map((runtime) => {
+		const marker = runtime.id === payload.active_runtime ? "●" : runtime.id === payload.default_runtime_id ? "◆" : "○";
+		const extras = [runtime.backend ?? "", runtime.build ?? ""].filter(Boolean).join(", ");
+		return `${marker} ${runtime.label ?? runtime.id}${extras ? ` (${extras})` : ""} — ${runtime.id}`;
+	});
 }
 
 export function formatCatalogue(models: CatalogueModel[], activeId: string | null | undefined): string[] {
@@ -630,7 +667,7 @@ function switchModel(state: GatewayState, ctx: ExtensionContext, modelId: string
 	const startedAt = Date.now();
 	setStatusSafe(ctx, `⏳ AutoTuner lädt ${label} …`);
 	const promise = gatewayRequest<GatewayStatus>(state.gateway, "POST", "/api/v1/switch", {
-		body: { model_id: modelId },
+		body: { model_id: modelId, timeout_s: SWITCH_TIMEOUT_S },
 		signal: controller.signal,
 		timeoutMs: SWITCH_TIMEOUT_MS,
 	})
@@ -687,7 +724,7 @@ async function activateInPi(pi: ExtensionAPI, ctx: ExtensionCommandContext, mode
 }
 
 const USAGE = [
-	"Verwendung: /autotuner [status|models|switch <model-id>|stop|refresh|health|help]",
+	"Verwendung: /autotuner [status|models|switch <model-id>|stop|runtimes|refresh|health|help]",
 	"Ohne Argument öffnet sich die Modellauswahl; /model listet dieselben Modelle unter dem Provider AutoTuner.",
 ].join("\n");
 
@@ -826,6 +863,17 @@ export default async function (pi: ExtensionAPI) {
 							return;
 						}
 						ctx.ui.notify(formatCatalogue(models, status?.active_model).join("\n"), "info");
+					} catch (error) {
+						ctx.ui.notify(describeError(error, state.gateway), "error");
+					}
+					return;
+				}
+
+				case "runtimes": {
+					try {
+						const payload = await gatewayRequest<RuntimesResponse>(state.gateway, "GET", "/api/v1/runtimes");
+						const lines = formatRuntimes(payload);
+						ctx.ui.notify(lines.length > 0 ? `${lines.join("\n")}\n● aktiv · ◆ Toolbar-Standard` : "AutoTuner meldet keine llama-server-Builds.", lines.length > 0 ? "info" : "warning");
 					} catch (error) {
 						ctx.ui.notify(describeError(error, state.gateway), "error");
 					}
