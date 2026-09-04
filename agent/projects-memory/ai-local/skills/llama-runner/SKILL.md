@@ -1,6 +1,6 @@
 ---
 name: llama-runner
-description: "Working on llama_runner.py, the unified self-healing launcher for llama-server (OOM recovery, repetition detection, benchmark mode). Use for ANY change to model presets, start scripts, escalation logic, benchmark grids, or when a local model crashes/loops/OOMs. Project-local skill for C:\\LAB\\ai-local. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+description: "Working on llama_runner.py, the unified self-healing launcher for llama-server (OOM recovery, repetition detection, benchmark mode). Use for ANY change to model presets, start scripts, escalation logic, benchmark grids, or when a local model crashes/loops/OOMs. Project-local skill for C:\\LAB\\ai-local. Manual-only; do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: manual
@@ -8,12 +8,12 @@ skill-governor-risk: high
 disable-model-invocation: true
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; it is manual-only, so run only the explicitly requested stages and treat historical versions, counts, and paths as evidence to re-check.
 
 # llama_runner.py — Self-Healing llama-server Launcher
 
 ## Location & usage
-- File: `C:\LAB\ai-local\llama_runner.py` (~900 lines). Deps: `pip install psutil requests`.
+- File: `L:\LAB\ai-local\llama_runner.py` (~900 lines). Deps: `pip install psutil requests`.
 - `python llama_runner.py run [--preset <name>]` — self-healing run (default preset: mistral-medium-128b)
 - `python llama_runner.py benchmark --preset <name>` — config matrix (6 configs × 4 prompts: chat/code/reasoning/long-context); realistic duration for 128B: 45–60 min (load time dominates). Output: JSON + Markdown table.
 - Server port: 1234 — must be free; legacy scripts `start_llama.py` / `start_llamaMM.py` remain untouched.
@@ -33,7 +33,7 @@ Explicit user/task requirements, exact paths, APIs, formats, repository evidence
 
 ## Model store layout (planned auto-discovery)
 - Models in `I:\models\<Family>\...` subfolders (Mistral, Gemma, Qwen, 1Bit-Bonsai, Frankenmerger, ...). Keep subfolders.
-- Two builds: `C:\LAB\ai-local\llama.cpp` (standard) and `C:\LAB\ai-local\1bllama.cpp` (Bonsai/1-bit). Folder name is the build-selection signal.
+- Two builds: `L:\LAB\ai-local\llama.cpp` (standard) and `L:\LAB\ai-local\1bllama.cpp` (Bonsai/1-bit). Folder name is the build-selection signal.
 - Open design goals: fuzzy mmproj matching (quant suffixes differ between model and mmproj), family-based default sampling params, size heuristics, `--model <path>` for arbitrary GGUFs so most models need no explicit preset.
 
 ## Verification

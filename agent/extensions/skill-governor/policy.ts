@@ -79,21 +79,42 @@ function firstPrescribedMatch(text: string, pattern: RegExp, suppressConditional
   return undefined;
 }
 
-const STOP_WORDS = new Set(["a", "an", "and", "are", "as", "at", "be", "by", "do", "for", "from", "in", "is", "it", "not", "of", "on", "only", "or", "the", "this", "to", "use", "when", "with", "work", "task", "project", "change", "code", "file", "skill", "als", "auf", "aus", "bei", "das", "der", "die", "ein", "eine", "für", "im", "ist", "mit", "nicht", "nur", "oder", "und", "verwenden", "wenn"]);
+const STOP_WORDS = new Set([
+  "a", "an", "and", "are", "as", "at", "be", "by", "do", "for", "from", "in", "is", "it", "not", "of", "on", "only", "or", "the", "this", "to", "use", "when", "with", "work", "task", "project", "change", "code", "file", "skill",
+  "als", "auf", "aus", "bei", "das", "der", "die", "ein", "eine", "für", "im", "ist", "mit", "nicht", "nur", "oder", "und", "verwenden", "wenn",
+  // Generic verbs and conversational filler carry no routing signal even though
+  // many skill names start with them ("fix-…", "repair-…", "ok mach weiter").
+  "fix", "repair", "check", "make", "run", "please", "bitte", "mach", "weiter", "ok", "okay", "explain", "erkläre", "erklär", "help", "hilf", "can", "kann", "kannst", "should", "soll", "sollte", "you", "du", "ich", "we", "wir", "my", "mein", "meine", "es", "dass", "so",
+]);
 function routingTokens(value: string): string[] {
   return value.toLowerCase().split(/[^a-z0-9äöüß]+/i).filter((term) => term.length >= 2 && !STOP_WORDS.has(term));
 }
 
+function nameTokens(name: string): Set<string> {
+  return new Set(name.toLowerCase().split(/[^a-z0-9äöüß]+/i).filter(Boolean));
+}
+
+/**
+ * Deterministic lexical routing score. Only whole name tokens and metadata
+ * tokens count; a bare substring of a name ("ok" inside "smoke") never does,
+ * and two-character tokens are too ambiguous to route a skill on their own.
+ */
 export function scoreSkillForPrompt(prompt: string, name: string, description: string): number {
   const terms = new Set(routingTokens(prompt));
   const normalizedName = name.toLowerCase();
-  const metadata = new Set(routingTokens(`${name} ${description}`));
+  const nameParts = nameTokens(name);
+  const metadata = [...new Set(routingTokens(`${name} ${description}`))];
+  const metadataSet = new Set(metadata);
   let score = 0;
   for (const term of terms) {
+    if (term.length < 3) {
+      if (metadataSet.has(term)) score += 1;
+      continue;
+    }
     if (normalizedName === term) score += 12;
-    else if (normalizedName.includes(term)) score += 5;
-    if (metadata.has(term)) score += 2;
-    if (term.length >= 3 && [...metadata].some((candidate) => candidate.length >= 3 && (candidate.startsWith(term) || term.startsWith(candidate)))) score += 1;
+    else if (nameParts.has(term)) score += 5;
+    if (metadataSet.has(term)) score += 2;
+    else if (metadata.some((candidate) => candidate.length >= 3 && Math.max(candidate.length, term.length) >= 4 && (candidate.startsWith(term) || term.startsWith(candidate)))) score += 1;
   }
   return score;
 }

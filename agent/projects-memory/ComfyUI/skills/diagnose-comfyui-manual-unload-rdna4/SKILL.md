@@ -1,14 +1,14 @@
 ---
 name: "diagnose-comfyui-manual-unload-rdna4"
 created: "2026-07-31"
-description: "Diagnose Alt+shortcut/manual unload leaving RAM or VRAM allocated in Windows RDNA4 ComfyUI. Do not use for unrelated project work or to broaden a smaller task."
+description: "Diagnose Alt+shortcut/manual unload leaving RAM or VRAM allocated in Windows RDNA4 ComfyUI. Do not use for unrelated work."
 version: 4
 updated: "2026-08-17"
 skill-governor-tier: auto
 skill-governor-risk: medium
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; use only the portion relevant to the current change and treat historical versions, counts, and paths as evidence to re-check.
 
 ## When to Use
 Use when ComfyUI's Unload Models and Execution Cache command appears to leave models or several GB in RAM/VRAM, or subsequent workflow runs become slower.

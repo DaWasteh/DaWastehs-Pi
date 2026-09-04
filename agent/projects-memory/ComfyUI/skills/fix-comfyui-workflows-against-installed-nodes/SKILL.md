@@ -1,13 +1,13 @@
 ---
 name: fix-comfyui-workflows-against-installed-nodes
-description: "Validate and repair ComfyUI UI-format workflows against the actually installed H:/ComfyUI nodes/extensions. Use when LLM-generated workflows have fictional node names, bad widget values, broken links, or loader/model mismatches. Do not use for unrelated project work or to broaden a smaller task."
+description: "Validate and repair ComfyUI UI-format workflows against the actually installed L:/ComfyUI nodes/extensions. Use when LLM-generated workflows have fictional node names, bad widget values, broken links, or loader/model mismatches. Do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: auto
 skill-governor-risk: medium
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; use only the portion relevant to the current change and treat historical versions, counts, and paths as evidence to re-check.
 
 # ComfyUI Workflow Validation Against Installed Nodes
 
@@ -15,7 +15,7 @@ Explicit user/task requirements, exact paths, APIs, formats, repository evidence
 Use this after consulting `comfyui-amd-workflows` for AMD workflow-editing rules. This skill owns the `object_info`/installed-node validation method.
 
 ## Object-info dump
-Dump object_info offline without loading models: set `sys.path` to `H:/ComfyUI/ComfyUI`, instantiate `PromptServer(asyncio.get_event_loop())`, then run `nodes.init_extra_nodes(init_custom_nodes=True, init_api_nodes=True)` and serialize each `NODE_CLASS_MAPPINGS` entry (`INPUT_TYPES`, `RETURN_TYPES`, category, output flag). Expect roughly 2232 nodes.
+Dump object_info offline without loading models: set `sys.path` to `L:/ComfyUI/ComfyUI`, instantiate `PromptServer(asyncio.get_event_loop())`, then run `nodes.init_extra_nodes(init_custom_nodes=True, init_api_nodes=True)` and serialize each `NODE_CLASS_MAPPINGS` entry (`INPUT_TYPES`, `RETURN_TYPES`, category, output flag). Expect roughly 2232 nodes.
 
 ## Validation rules
 - Node `type` must exist, except frontend-only nodes such as `Note`, `MarkdownNote`, `Reroute`, and `PrimitiveNode`.

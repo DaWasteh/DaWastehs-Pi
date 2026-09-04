@@ -1,7 +1,7 @@
 ---
 name: "build-autotuner-exe"
 created: "2026-07-05"
-description: "Build the noconsole AutoTuner .exe / Linux binary and publish a self-updating GitHub Release. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+description: "Build the noconsole AutoTuner .exe / Linux binary and publish a self-updating GitHub Release. Manual-only; do not use for unrelated work."
 version: 21
 updated: "2026-08-17"
 skill-governor-tier: manual
@@ -9,7 +9,7 @@ skill-governor-risk: high
 disable-model-invocation: true
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; it is manual-only, so run only the explicitly requested stages and treat historical versions, counts, and paths as evidence to re-check.
 
 ## When to Use
 Releasing a new AutoTuner version (compiled noconsole binary), refreshing the self-update release asset, or diagnosing frozen-build path/state issues (settings vs user state).

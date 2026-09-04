@@ -1,14 +1,14 @@
 ---
 name: "repair-comfyui-windows-ctrlc-shutdown"
 created: "2026-08-02"
-description: "Repair and verify graceful Ctrl+C shutdown for the two L:/ComfyUI Windows RDNA4 launchers. Do not use for unrelated project work or to broaden a smaller task."
+description: "Repair and verify graceful Ctrl+C shutdown for the two L:/ComfyUI Windows RDNA4 launchers. Do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: auto
 skill-governor-risk: medium
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; use only the portion relevant to the current change and treat historical versions, counts, and paths as evidence to re-check.
 
 ## When to Use
 Use when start-R9700.ps1 or start-9070XT.ps1 no longer exits on Ctrl+C, when PowerShell suppresses console interrupts, or after changing the Windows launcher/supervisor.

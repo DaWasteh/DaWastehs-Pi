@@ -9,28 +9,60 @@ import type { GovernorConfig } from "./types.ts";
 
 const SKILL_BLOCK = /\n*The following skills provide specialized instructions for specific tasks\.[\s\S]*?<\/available_skills>/g;
 const COMPACT_LOCAL_PROMPT = "You are Pi, a coding agent. Obey exact user requirements and repository evidence. Before edits, read applicable AGENTS.md, CLAUDE.md, and PLAN.md. Use schema-valid active-tool calls; trust real results. Make the smallest complete safe change. Fix validator errors before success. Use capability_route for hidden skills/tools.";
-const LOCAL_PROVIDERS = new Set(["llama-server", "llama.cpp", "ollama", "lmstudio", "vllm", "sglang"]);
+// Provider IDs that always denote a local inference server. Anything else is
+// classified by its base URL (loopback or unspecified-address origins).
+const LOCAL_PROVIDERS = new Set(["llama-server", "llama.cpp", "autotuner", "ollama", "lmstudio", "vllm", "sglang"]);
+const LOCAL_ORIGIN = /^https?:\/\/(?:127\.0\.0\.1|localhost|0\.0\.0\.0|\[::1\]|\[::\])(?::\d+)?(?:\/|$)/i;
 const MAX_ROUTE_DESCRIPTION_CHARS = 320;
+/** Session entry type that remembers the governor-owned tool delta across /reload. */
+const DELTA_ENTRY_TYPE = "skill-governor";
 
 type ModelReference = { provider?: string; id?: string; baseUrl?: string };
 type CapabilityMatch = { type: "skill" | "tool"; name: string; description: string; score: number; path?: string };
+type DeltaEntryData = { removed?: unknown };
 
-function mergeConfig(input: unknown): GovernorConfig {
-  const raw = input && typeof input === "object" ? input as Partial<GovernorConfig> : {};
+function stringArray(value: unknown, fallback: string[]): string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? [...value] : fallback;
+}
+
+function positiveInteger(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : fallback;
+}
+
+function booleanOr(value: unknown, fallback: boolean): boolean {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+/** Field-wise validation: a malformed config.json degrades to the defaults instead of throwing at session start. */
+export function mergeConfig(input: unknown): GovernorConfig {
+  const raw = input && typeof input === "object" ? input as Record<string, unknown> : {};
+  const routing = raw.routing && typeof raw.routing === "object" ? raw.routing as Record<string, unknown> : {};
+  const localTools = raw.localTools && typeof raw.localTools === "object" ? raw.localTools as Record<string, unknown> : {};
+  const defaults = DEFAULT_GOVERNOR_CONFIG;
   return {
     schemaVersion: 2,
-    enabled: raw.enabled ?? DEFAULT_GOVERNOR_CONFIG.enabled,
-    routing: { ...DEFAULT_GOVERNOR_CONFIG.routing, ...(raw.routing ?? {}) },
-    localTools: { ...DEFAULT_GOVERNOR_CONFIG.localTools, ...(raw.localTools ?? {}) },
+    enabled: booleanOr(raw.enabled, defaults.enabled),
+    routing: {
+      maxSkills: positiveInteger(routing.maxSkills, defaults.routing.maxSkills),
+      maxSkillsLocal: positiveInteger(routing.maxSkillsLocal, defaults.routing.maxSkillsLocal),
+      maxLocalSystemPromptBytes: positiveInteger(routing.maxLocalSystemPromptBytes, defaults.routing.maxLocalSystemPromptBytes),
+      minScore: positiveInteger(routing.minScore, defaults.routing.minScore),
+    },
+    localTools: {
+      enabled: booleanOr(localTools.enabled, defaults.localTools.enabled),
+      interactiveOnly: booleanOr(localTools.interactiveOnly, defaults.localTools.interactiveOnly),
+      keep: stringArray(localTools.keep, defaults.localTools.keep),
+      blocked: stringArray(localTools.blocked, defaults.localTools.blocked),
+    },
   };
 }
 
-function isLocal(model: ModelReference | undefined): boolean {
+export function isLocal(model: ModelReference | undefined): boolean {
   if (!model) return false;
   const provider = (model.provider ?? "").toLowerCase();
   return LOCAL_PROVIDERS.has(provider)
     || /^llama-server=https?:\/\//i.test(provider)
-    || /https?:\/\/(?:127\.0\.0\.1|localhost|\[::1\])(?::\d+)?/i.test(model.baseUrl ?? "");
+    || LOCAL_ORIGIN.test(model.baseUrl ?? "");
 }
 
 function visibleSkill(skill: Skill): Skill {
@@ -55,8 +87,11 @@ function compactLocalPrompt(cwd: string, byteLimit: number): string {
   return prefix + truncateUtf8(cwd, Math.max(0, byteLimit - Buffer.byteLength(prefix, "utf8")));
 }
 
+// Built from code points so the source never contains raw control characters.
+const CONTROL_CHARS = new RegExp(`[${String.fromCharCode(0)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`, "g");
+
 function compactMetadata(value: string): string {
-  return value.replace(/[\u0000-\u001f\u007f]/g, (character) => {
+  return value.replace(CONTROL_CHARS, (character) => {
     if (character === "\n") return "\\n";
     if (character === "\r") return "\\r";
     if (character === "\t") return "\\t";
@@ -92,6 +127,18 @@ export default function skillGovernor(pi: ExtensionAPI): void {
   let locallyRemoved = new Set<string>();
   let routeAdded = new Set<string>();
 
+  /** The local profile (tool reduction and compact prompt) share one predicate. */
+  const profileApplies = (ctx: Pick<ExtensionContext, "hasUI">): boolean =>
+    config.enabled && config.localTools.enabled && (!config.localTools.interactiveOnly || ctx.hasUI);
+
+  const rememberDelta = (): void => {
+    try {
+      pi.appendEntry<DeltaEntryData>(DELTA_ENTRY_TYPE, { removed: [...locallyRemoved] });
+    } catch {
+      // Entry persistence is best effort; the in-memory delta still works.
+    }
+  };
+
   const restoreOwnedDelta = (): void => {
     if (!localProfileActive) return;
     const active = new Set(pi.getActiveTools());
@@ -102,12 +149,11 @@ export default function skillGovernor(pi: ExtensionAPI): void {
     pi.setActiveTools([...active]);
     locallyRemoved.clear();
     localProfileActive = false;
+    rememberDelta();
   };
 
   const applyLocalTools = (ctx: Pick<ExtensionContext, "hasUI">, local: boolean): void => {
-    const profileApplies = config.enabled && config.localTools.enabled
-      && (!config.localTools.interactiveOnly || ctx.hasUI);
-    if (!profileApplies || !local) {
+    if (!profileApplies(ctx) || !local) {
       restoreOwnedDelta();
       return;
     }
@@ -118,6 +164,28 @@ export default function skillGovernor(pi: ExtensionAPI): void {
     locallyRemoved = new Set(active.filter((name) => !allowed.has(name) || blocked.has(name)));
     pi.setActiveTools(active.filter((name) => allowed.has(name) && !blocked.has(name)));
     localProfileActive = true;
+    rememberDelta();
+  };
+
+  /**
+   * `/reload` rebuilds the extension with the already reduced tool set, so a
+   * fresh instance would compute an empty delta and could never restore the
+   * hidden tools after a switch to a cloud model. Re-add the delta persisted by
+   * the previous instance before the normal profile logic runs again.
+   */
+  const recoverDeltaAfterReload = (ctx: ExtensionContext): void => {
+    const entries = ctx.sessionManager.getEntries();
+    for (let index = entries.length - 1; index >= 0; index--) {
+      const entry = entries[index];
+      if (entry.type !== "custom" || entry.customType !== DELTA_ENTRY_TYPE) continue;
+      const removed = stringArray((entry.data as DeltaEntryData | undefined)?.removed, []);
+      if (removed.length === 0) return;
+      const known = new Set(pi.getAllTools().map((tool) => tool.name));
+      const active = new Set(pi.getActiveTools());
+      for (const name of removed) if (known.has(name)) active.add(name);
+      pi.setActiveTools([...active]);
+      return;
+    }
   };
 
   const clearRoutedTools = (): void => {
@@ -182,15 +250,16 @@ export default function skillGovernor(pi: ExtensionAPI): void {
         try { ctx.ui.notify(JSON.stringify(auditSkillText(await readFile(rest[0], "utf8")), null, 2), "info"); }
         catch { ctx.ui.notify("Skill file could not be read.", "warning"); }
       } else {
-        ctx.ui.notify(`skills: ${catalog.length}; local tool profile: ${currentLocal ? "active" : "off"}`, "info");
+        ctx.ui.notify(`skills: ${catalog.length}; local tool profile: ${localProfileActive ? "active" : "off"}${locallyRemoved.size > 0 ? ` (${locallyRemoved.size} hidden tools)` : ""}`, "info");
       }
     },
   });
 
-  pi.on("session_start", async (_event, ctx) => {
+  pi.on("session_start", async (event, ctx) => {
     try { config = mergeConfig(JSON.parse(await readFile(configPath, "utf8"))); }
     catch { config = DEFAULT_GOVERNOR_CONFIG; }
     currentLocal = isLocal(ctx.model);
+    if (event.reason === "reload") recoverDeltaAfterReload(ctx);
     applyLocalTools(ctx, currentLocal);
   });
 
@@ -213,23 +282,29 @@ export default function skillGovernor(pi: ExtensionAPI): void {
     return { skillPaths: roots };
   });
 
-  pi.on("before_agent_start", async (event) => {
+  pi.on("before_agent_start", async (event, ctx) => {
     if (!config.enabled) return undefined;
     catalog = event.systemPromptOptions?.skills ?? catalog;
     const base = event.systemPrompt.replace(SKILL_BLOCK, "");
-    if (!currentLocal) {
-      const selected = rankSkills(event.prompt ?? "", catalog, config.routing.minScore, config.routing.maxSkills).map((row) => visibleSkill(row.skill));
+    // Headless local sessions (subagents, `--mode json`) keep Pi's full prompt
+    // and their configured tools; only the routed-skill count is reduced.
+    if (!currentLocal || !profileApplies(ctx)) {
+      const limit = currentLocal ? config.routing.maxSkillsLocal : config.routing.maxSkills;
+      const selected = rankSkills(event.prompt ?? "", catalog, config.routing.minScore, limit).map((row) => visibleSkill(row.skill));
       return { systemPrompt: selected.length > 0 ? base + formatSkillsForPrompt(selected) : base };
     }
+    // Interactive local profile: the governor-owned prompt stays within the
+    // byte budget. Package extensions that run later (memory policy, prompt
+    // modes) append their own fragments and own that cost.
     const explicitPrompt = (typeof event.systemPromptOptions?.customPrompt === "string" && event.systemPromptOptions.customPrompt.length > 0)
       || (typeof event.systemPromptOptions?.appendSystemPrompt === "string" && event.systemPromptOptions.appendSystemPrompt.length > 0);
     const byteLimit = config.routing.maxLocalSystemPromptBytes;
     let systemPrompt = explicitPrompt ? base : compactLocalPrompt(event.systemPromptOptions?.cwd ?? process.cwd(), byteLimit);
     if (Buffer.byteLength(systemPrompt, "utf8") > byteLimit) return { systemPrompt };
-    const selected = rankSkills(event.prompt ?? "", catalog, config.routing.minScore, config.routing.maxSkillsLocal)[0];
-    if (selected) {
+    for (const selected of rankSkills(event.prompt ?? "", catalog, config.routing.minScore, config.routing.maxSkillsLocal)) {
       const candidate = systemPrompt + formatCompactLocalSkill(selected.skill);
-      if (Buffer.byteLength(candidate, "utf8") <= byteLimit) systemPrompt = candidate;
+      if (Buffer.byteLength(candidate, "utf8") > byteLimit) break;
+      systemPrompt = candidate;
     }
     return { systemPrompt };
   });

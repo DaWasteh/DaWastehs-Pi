@@ -58,7 +58,8 @@ test("the real catalog routes German commit/tag/push work to the manual release 
     if (!entry.isDirectory()) continue;
     catalog.push(...loadSkillsFromDir({ dir: resolve(projectsRoot, entry.name, "skills"), source: entry.name }).skills);
   }
-  assert.ok(catalog.length >= 85);
+  // v2.8 retired five completed or tool-less skills and moved unreachable project keys.
+  assert.ok(catalog.length >= 80);
   const [first] = rankSkills("committen, taggen und pushen für v2.7", catalog, 2, 5);
   assert.equal(first.skill.name, "github-ausfuehrliche-versionierung");
   assert.equal(first.skill.disableModelInvocation, true);

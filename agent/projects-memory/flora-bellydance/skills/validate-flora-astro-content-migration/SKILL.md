@@ -1,13 +1,13 @@
 ---
 name: validate-flora-astro-content-migration
-description: "Compare and migrate content from the legacy Flora Bellydance site into this Astro repo. Do not use for unrelated project work or to broaden a smaller task."
+description: "Compare and migrate content from the legacy Flora Bellydance site into this Astro repo. Do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: auto
 skill-governor-risk: medium
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; use only the portion relevant to the current change and treat historical versions, counts, and paths as evidence to re-check.
 
 # Flora Bellydance — Astro Content Migration Validation
 

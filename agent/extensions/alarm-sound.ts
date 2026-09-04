@@ -4,7 +4,13 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { AgentEndEvent, ExtensionAPI } from "@earendil-works/pi-coding-agent";
 
-const ALARM_PATH = join(homedir(), ".pi", "agent", "extensions", "audio", "alarm.mp3");
+// Honour PI_CODING_AGENT_DIR like every other extension instead of assuming ~/.pi/agent.
+const ALARM_PATH = join(
+  process.env.PI_CODING_AGENT_DIR ?? join(homedir(), ".pi", "agent"),
+  "extensions",
+  "audio",
+  "alarm.mp3",
+);
 const ALARM_VOLUME = 30;
 const ALARM_TIMEOUT_MS = 30_000;
 const USER_INPUT_TOOL_NAMES = new Set(["ask_user_question"]);

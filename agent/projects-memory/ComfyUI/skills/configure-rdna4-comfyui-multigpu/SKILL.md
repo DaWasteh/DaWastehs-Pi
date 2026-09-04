@@ -1,6 +1,6 @@
 ---
 name: configure-rdna4-comfyui-multigpu
-description: "Enable and validate native RDNA4 multi-GPU ComfyUI on H:/ComfyUI. Use for launcher edits, R9700/9070 mapping, P2P/CPU-staging behavior, solo R9700 crash-avoidance, or DisTorch/MultiGPU workflow routing. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+description: "Enable and validate native RDNA4 multi-GPU ComfyUI on L:/ComfyUI. Use for launcher edits, R9700/9070 mapping, P2P/CPU-staging behavior, solo R9700 crash-avoidance, or DisTorch/MultiGPU workflow routing. Manual-only; do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: manual
@@ -8,12 +8,12 @@ skill-governor-risk: high
 disable-model-invocation: true
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; it is manual-only, so run only the explicitly requested stages and treat historical versions, counts, and paths as evidence to re-check.
 
 # ComfyUI RDNA4 Multi-GPU Launcher Rules
 
 ## Environment
-- Project: `H:/ComfyUI` on Windows RDNA4.
+- Project: `L:/ComfyUI` on Windows RDNA4.
 - Devices expected by the launcher probe: `cuda:0` = Radeon AI Pro R9700 (~31.86 GB), `cuda:1` = RX 9070 XT (~15.92 GB).
 - Also consult `comfyui-amd-workflows` for workflow JSON editing and AMD/no-CUDA rules.
 
@@ -41,9 +41,9 @@ After any comfy_aimdo access violation, restart the whole Python process — the
 
 ## Verification
 ```powershell
-cd H:/ComfyUI/ComfyUI
-../.venv/Scripts/python.exe -m py_compile custom_nodes/ComfyUI-MultiGPU/p2p_registry.py custom_nodes/ComfyUI-MultiGPU/__init__.py comfy/samplers.py
-powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '$errs=@();$tokens=@();[System.Management.Automation.Language.Parser]::ParseFile("H:\ComfyUI\start-rdna4-multigpu.ps1",[ref]$tokens,[ref]$errs)|Out-Null;if($errs.Count){$errs|Format-List *;exit 1}else{Write-Host "PowerShell parse OK"}'
+cd L:/ComfyUI/ComfyUI
+../.venv/Scripts/python.exe -m py_compile custom_nodes/ComfyUI-DaWasteh-MultiGPU-Control custom_nodes/ComfyUI-MultiGPU/__init__.py comfy/samplers.py
+powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '$errs=@();$tokens=@();[System.Management.Automation.Language.Parser]::ParseFile("L:\ComfyUI\start-MultiGPU.ps1",[ref]$tokens,[ref]$errs)|Out-Null;if($errs.Count){$errs|Format-List *;exit 1}else{Write-Host "PowerShell parse OK"}'
 ```
 
-With user consent, `start-rdna4-multigpu.ps1 -QuickTestMode` exits 0 and logs CPU staging/P2P disabled plus the expected device map.
+With user consent, `start-MultiGPU.ps1 -QuickTestMode` exits 0 and logs CPU staging/P2P disabled plus the expected device map.

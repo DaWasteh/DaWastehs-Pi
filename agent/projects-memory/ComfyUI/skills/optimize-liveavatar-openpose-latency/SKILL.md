@@ -1,14 +1,14 @@
 ---
 name: "optimize-liveavatar-openpose-latency"
 created: "2026-08-02"
-description: "Profile and reduce LiveAvatar AI Mirror latency by caching OpenPose and tuning its critical path. Do not use for unrelated project work or to broaden a smaller task."
+description: "Profile and reduce LiveAvatar AI Mirror latency by caching OpenPose and tuning its critical path. Do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: auto
 skill-governor-risk: medium
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; use only the portion relevant to the current change and treat historical versions, counts, and paths as evidence to re-check.
 
 ## When to Use
 Use when LiveAvatar-07/11 takes roughly 2 seconds per webcam frame despite a fast 4-step sampler and available R9700 VRAM.
@@ -20,7 +20,7 @@ Use when LiveAvatar-07/11 takes roughly 2 seconds per webcam frame despite a fas
 4. Use `DaWastehCachedOpenPose` from ComfyUI-DaWasteh-LiveAvatar. ComfyUI's classic object cache reuses the node instance by workflow node ID, so the detector remains resident across Run-(Instant) prompts.
 5. Create a separate numbered optimized workflow instead of overwriting the baseline. Workflow 11 uses 384² BRIO input, DirectShow index 2, body+face enabled, hands disabled, and retains four LCM steps plus the established ControlNet/IPAdapter strengths.
 6. Restart ComfyUI after changing custom-node Python, confirm the node through `/object_info/DaWastehCachedOpenPose`, then benchmark one cold and at least eight sequential hot API prompts.
-7. Sync installed node code and workflows into `L:/GitHub/DaWasteh ComfyUI Nodes`; update templates, generator, pinned object-info, validation totals, tests, and documentation before committing/pushing.
+7. Sync installed node code and workflows into `L:/GitHub/DaWastehs-ComfyUI-Bundle`; update templates, generator, pinned object-info, validation totals, tests, and documentation before committing/pushing.
 
 ## Pitfalls
 - Do not parallelize two diffusion prompts on the same GPU first; they contend for compute/bandwidth, increase stale-frame backlog, and do not remove serial model reloads.

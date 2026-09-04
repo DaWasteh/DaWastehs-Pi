@@ -28,7 +28,7 @@
     "caveman": "off",
     "rtk": "off",
     "toon": "off",
-    "ponytail": "off"
+    "ponytail": "full"
   },
   "gate": {
     "disableDefaults": false,

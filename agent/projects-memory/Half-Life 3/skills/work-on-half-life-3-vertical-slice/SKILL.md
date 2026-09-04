@@ -1,14 +1,14 @@
 ---
 name: "work-on-half-life-3-vertical-slice"
 created: "2026-07-09"
-description: "Develop and verify the Half-Life 3 Borealis Signal browser vertical slice, including its expanded mountain level, combat audio, rendering, physics, and smoke gates. Do not use for unrelated project work or to broaden a smaller task."
+description: "Develop and verify the Half-Life 3 Borealis Signal browser vertical slice, including its expanded mountain level, combat audio, rendering, physics, and smoke gates. Do not use for unrelated work."
 version: 5
 updated: "2026-08-17"
 skill-governor-tier: auto
 skill-governor-risk: medium
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. Use only the narrow portion relevant to the current change. Do not add installation, release, unrelated cleanup, broad exploration, or full-suite verification unless the changed surface requires it. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; use only the portion relevant to the current change and treat historical versions, counts, and paths as evidence to re-check.
 
 ## When to Use
 Use for the Borealis Signal rendering, weapon/audio, mountain-level, physics, or matching smoke-test path. Select only the section corresponding to the requested change.

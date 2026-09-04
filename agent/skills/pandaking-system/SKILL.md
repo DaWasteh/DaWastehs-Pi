@@ -13,7 +13,7 @@ Use for machine-specific commands, scripts, path selection, build settings, GPU/
 1. Match the user's language; keep code, code comments, and commit messages in English unless the repository says otherwise.
 2. Use the fixed hardware facts: Core Ultra 9 285K (24 threads; build parallelism normally 20), RX 9070 XT 16 GB, Radeon AI Pro R9700 32 GB, Intel iGPU, 48 GB RAM, MSI MEG Z890 UNIFY-X, Secure Boot disabled. Never propose CUDA-only paths.
 3. Distinguish OS identities: Windows `Pandaking`/`C:\Users\Sebas`; Ubuntu `KillMicroslop`/`/home/dawasteh`. Windows prefers Vulkan; Ubuntu can use ROCm/HIP.
-4. Resolve the task's actual drive before using remembered lab paths. Common roots include `C:\LAB\ai-local`, `H:\LAB\ai-local`, `I:\models`, and `C:\Users\Sebas\.pi`, but they are context, not defaults that override the request.
+4. Resolve the task's actual drive before using remembered lab paths. Common roots include `L:\LAB\ai-local`, `I:\models`, and `C:\Users\Sebas\.pi`, but they are context, not defaults that override the request.
 5. Use VS 2026 (`"Visual Studio 18 2026"`, toolset v180), CMake >=4.2, Node >=22, and modern Python. Apply `powershell-windows-scripting` only for Windows scripting work.
 6. Check port 1234 before starting another llama-server. Keep model families in separate `I:\models\<family>` folders.
 7. Before boot/ESP operations, manually load `dualboot-separated-drives` and re-observe device mappings.

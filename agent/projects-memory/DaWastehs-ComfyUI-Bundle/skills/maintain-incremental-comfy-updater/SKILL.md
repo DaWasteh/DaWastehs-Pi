@@ -1,7 +1,7 @@
 ---
 name: "maintain-incremental-comfy-updater"
 created: "2026-08-11"
-description: "Maintain and release the safe incremental Windows ComfyUI updater for this bundle. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+description: "Maintain and release the safe incremental Windows ComfyUI updater for this bundle. Manual-only; do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: manual
@@ -9,7 +9,7 @@ skill-governor-risk: high
 disable-model-invocation: true
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; it is manual-only, so run only the explicitly requested stages and treat historical versions, counts, and paths as evidence to re-check.
 
 ## When to Use
 Use when changing tools/update-comfyui-rdna4.ps1 or .bat, deployment paths, owned workflow/node synchronization, updater backups/manifests, or updater release behavior in DaWastehs-ComfyUI-Bundle.
@@ -37,4 +37,4 @@ Use when changing tools/update-comfyui-rdna4.ps1 or .bat, deployment paths, owne
 2. The full repository unittest suite passes and workflow validation reports errors: 0.
 3. PowerShell parses both L:/ComfyUI/update-comfyui-rdna4.ps1 and tools/update-comfyui-rdna4.ps1 without errors.
 4. git hash-object for each installed launcher copy equals the corresponding HEAD blob.
-5. L:/GitHub/DaWasteh ComfyUI Nodes is absent, and git status is clean after release.
+5. L:/GitHub/DaWastehs-ComfyUI-Bundle is absent, and git status is clean after release.

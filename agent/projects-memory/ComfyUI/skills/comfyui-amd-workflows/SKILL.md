@@ -1,6 +1,6 @@
 ---
 name: comfyui-amd-workflows
-description: "Building and repairing ComfyUI workflow JSONs on AMD GPUs (RDNA4 locally, RDNA2 for Kevin's RX 6800). Use for any ComfyUI error, workflow graph edit, face-preservation/FaceID pipeline, ACE-Step audio generation, IPAdapter/InsightFace issue, or comfyui-rocm installation/repair. No CUDA exists on these machines. Manual-only: invoke only for an explicit matching task; do not use for routine edits or adjacent project work."
+description: "Building and repairing ComfyUI workflow JSONs on AMD GPUs (RDNA4 locally, RDNA2 for Kevin's RX 6800). Use for any ComfyUI error, workflow graph edit, face-preservation/FaceID pipeline, ACE-Step audio generation, IPAdapter/InsightFace issue, or comfyui-rocm installation/repair. No CUDA exists on these machines. Manual-only; do not use for unrelated work."
 version: 2
 updated: "2026-08-17"
 skill-governor-tier: manual
@@ -8,7 +8,7 @@ skill-governor-risk: high
 disable-model-invocation: true
 ---
 ## Governance
-Explicit user/task requirements, exact paths, APIs, formats, repository evidence, and acceptance criteria override this skill's examples and historical defaults. This skill is manual-only because its workflow can mutate environments, repositories, releases, large collections, or user data. Run only the explicitly requested stages; installation, deletion, deployment, commit, tag, push, restart, and exhaustive verification each require matching scope or approval. Historical versions, counts, timings, paths, and model names are evidence to re-check, not universal truth.
+Explicit task requirements and repository evidence override this skill; it is manual-only, so run only the explicitly requested stages and treat historical versions, counts, and paths as evidence to re-check.
 
 # ComfyUI on AMD — Workflow & Repair Rules
 
