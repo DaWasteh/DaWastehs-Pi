@@ -155,8 +155,23 @@ per-model launch setting; the extension only asks for a model ID.
   then a regex scan of `autotuner_settings.json`. That file holds benchmark
   results and is tens of megabytes here, so it is never JSON-parsed; AutoTuner's
   reference extension refused files above 2 MiB and could not find the token on
-  this machine at all. A persisted "disabled" flag is respected unless explicit
-  environment credentials override it.
+  this machine at all. Since v2.9 the sidecar is authoritative only while it
+  carries a token: AutoTuner rewrites it as `enabled: false` without a token
+  whenever the gateway stops (app closed, API switched off, a second instance
+  exiting), and that used to hide the credentials that were still persisted in
+  the settings file. Now the settings file decides in that case and the request
+  itself reports "nicht erreichbar"; only a persisted `control_api_enabled:
+  false` (or `AUTOTUNER_CONTROL_API_ENABLED=0`) is a veto.
+- **AutoTuner may start after Pi.** Credentials are re-read whenever `/model`
+  opens while the provider is unconfigured and on every session start, and the
+  provider is re-registered with the real token right after the refresh, so no
+  Pi restart or `/autotuner refresh` is needed once AutoTuner is running.
+- **Unload on quit.** A model that this Pi process loaded through the gateway is
+  stopped again (`POST /api/v1/stop`, bounded to 10 s) when Pi quits. Session
+  switches (`/new`, `/resume`, `/fork`, `/reload`) keep it, a model that was
+  already running before Pi asked for it (started from AutoTuner's GUI or by
+  another client) is never touched, AutoTuner's `model_busy` answer for in-flight
+  requests is respected, and `AUTOTUNER_UNLOAD_ON_EXIT=0` disables the behaviour.
 - **Reasoning.** Pi-level `reasoning` mirrors AutoTuner's scanner verdict so
   `reasoning_content` renders as thinking blocks; no `reasoning_effort` or
   budget fields are sent because AutoTuner's saved reasoning launch setting
@@ -164,8 +179,9 @@ per-model launch setting; the extension only asks for a model ID.
   port 1233; llama-server itself keeps listening on 1234.
 
 When the API is off or AutoTuner is closed, the provider registers empty and
-stays quiet; `/autotuner status` and a startup warning (only while an AutoTuner
-model is the active model) explain what to enable. `AUTOTUNER_DATA_DIR` moves the
+stays quiet; `/autotuner status`, `/autotuner health`, and a startup warning
+(only while an AutoTuner model is the active model) explain what to enable or
+that the gateway is not reachable. `AUTOTUNER_DATA_DIR` moves the
 settings and sidecar lookup for portable installs.
 
 ### `stargate-header.ts`
@@ -384,7 +400,10 @@ would add unsupported complexity.
 Local models are normally selected through the `autotuner` provider (see
 `autotuner.ts`); `llamaServerUrl` stays on port 1234 because that is where
 AutoTuner starts llama-server, so the direct `llama-server` provider remains a
-manual fallback.
+manual fallback. pi-llama-cpp 0.10 renamed its fallback constant from
+`DEFAULT_LLAMA_SERVER_URL` to `LLAMA_SERVER_URL` and still honours the legacy
+`llamaServerUrl` setting; since v2.9 the post-update patch accepts both names
+and reports a missing constant as information rather than as a warning.
 
 ### Global engineering guideline: Ponytail
 

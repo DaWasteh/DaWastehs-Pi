@@ -109,6 +109,20 @@ export function updateAuthorizationAllows(
 }
 
 /** Recognize workflow IDs that are always either a UUID or absent. */
+/**
+ * Rewrites pi-llama-cpp's fallback server URL in `src/constants.ts`.
+ * pi-llama-cpp ≤ 0.9 exported `DEFAULT_LLAMA_SERVER_URL`; 0.10 renamed it to
+ * `LLAMA_SERVER_URL`. Both spellings are accepted and the name found is kept.
+ * Returns `found: false` when neither constant is present (upstream changed
+ * again); the caller then leaves the file alone.
+ */
+export function patchLlamaServerUrlSource(source: string, url: string): { found: boolean; next: string } {
+  const pattern = /export const (DEFAULT_LLAMA_SERVER_URL|LLAMA_SERVER_URL)\s*=\s*["']http:\/\/127\.0\.0\.1:\d+["'];/;
+  const match = pattern.exec(source);
+  if (!match) return { found: false, next: source };
+  return { found: true, next: source.replace(pattern, `export const ${match[1]} = "${url}";`) };
+}
+
 export function hasFilesystemSafePiSubagentsAsyncWorkflowId(source: string): boolean {
   return /\bconst\s+workflowRunId\s*=\s*(?:randomUUID\(\)|[^\r\n;?]+\?\s*randomUUID\(\)\s*:\s*undefined)\s*;/.test(source);
 }
@@ -263,18 +277,17 @@ export default async function (pi: ExtensionAPI) {
       };
     }
 
-    const targetLine = `export const DEFAULT_LLAMA_SERVER_URL = "${LLAMA_SERVER_URL}";`;
-    const defaultUrlPattern = /export const DEFAULT_LLAMA_SERVER_URL\s*=\s*["']http:\/\/127\.0\.0\.1:\d+["'];/;
-
-    if (!defaultUrlPattern.test(source)) {
+    const { found, next } = patchLlamaServerUrlSource(source, LLAMA_SERVER_URL);
+    if (!found) {
+      // Not fatal: pi-llama-cpp still honours the global `llamaServerUrl`
+      // setting, which ensureGlobalLlamaServerUrl() keeps on port 1234.
       return {
         found: true,
-        ok: false,
-        message: `⚠️ Could not find DEFAULT_LLAMA_SERVER_URL in ${constantsPath}.`,
+        ok: true,
+        message: `ℹ️ No fallback server URL constant found in ${constantsPath}; the global llamaServerUrl setting still applies.`,
       };
     }
 
-    const next = source.replace(defaultUrlPattern, targetLine);
     if (next === source) {
       return { found: true, ok: true, message: `✅ ${LLAMA_CPP_PACKAGE_NAME} fallback already uses ${LLAMA_SERVER_URL}.` };
     }

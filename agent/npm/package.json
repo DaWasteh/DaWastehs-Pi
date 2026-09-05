@@ -12,12 +12,12 @@
     "@juicesharp/rpiv-todo": "^2.9.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@xynogen/pix-optimizer": "^1.1.29",
-    "pi-hermes-memory": "^0.9.7",
+    "pi-hermes-memory": "^0.9.8",
     "pi-intercom": "^0.13.0",
     "pi-llama-cpp": "^0.10.0",
     "pi-mcp-adapter": "^2.32.1",
     "pi-prompt-template-model": "^0.12.2",
-    "pi-subagents": "^0.64.0",
-    "pi-web-access": "^0.27.0"
+    "pi-subagents": "^0.65.1",
+    "pi-web-access": "^0.28.0"
   }
 }

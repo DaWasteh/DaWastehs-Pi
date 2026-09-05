@@ -13,6 +13,7 @@ async function startFakeGateway(options = {}) {
 	const calls = [];
 	const state = {
 		active: options.active ?? null,
+		activeSince: options.active ? Date.now() / 1000 - 120 : null,
 		loading: null,
 		switchDelayMs: options.switchDelayMs ?? 0,
 		failSwitchWith: options.failSwitchWith,
@@ -26,7 +27,7 @@ async function startFakeGateway(options = {}) {
 		status: state.loading ? "loading" : state.active ? "ready" : "idle",
 		active_model: state.active,
 		loading_model: state.loading,
-		active_since: state.active ? Date.now() / 1000 - 120 : null,
+		active_since: state.active ? state.activeSince : null,
 		inflight_requests: 0,
 		endpoint: `http://127.0.0.1:${server.address().port}`,
 	});
@@ -68,6 +69,7 @@ async function startFakeGateway(options = {}) {
 				state.loading = model.id;
 				setTimeout(() => {
 					state.active = model.id;
+					state.activeSince = Date.now() / 1000;
 					state.loading = null;
 					send(res, 200, status());
 				}, state.switchDelayMs);
@@ -75,6 +77,7 @@ async function startFakeGateway(options = {}) {
 			}
 			if (req.url === "/api/v1/stop" && req.method === "POST") {
 				state.active = null;
+				state.activeSince = null;
 				return send(res, 200, status());
 			}
 			return error(res, 404, "Endpoint not found.", "not_found");
@@ -207,13 +210,21 @@ test("credential discovery prefers the sidecar, scans the large settings file wi
 		const escapedToken = 'esc"aped-0123456789abcdef';
 		assert.deepEqual(parseSettingsCredentials('{"control_api_token": ' + JSON.stringify(escapedToken) + "}"), { token: escapedToken });
 
-		// The sidecar wins over the settings file, including enabled=false.
-		await writeFile(join(dir, "control_api.json"), JSON.stringify({ schema: 1, enabled: false, port: 1233, version: "5.3.9" }), "utf8");
+		// AutoTuner rewrites the sidecar without a token whenever the gateway
+		// stops (app closed, API switched off). That must not hide credentials
+		// that are still persisted in the settings file: reachability decides.
+		await writeFile(join(dir, "control_api.json"), JSON.stringify({ schema: 1, enabled: false, base_url: "http://127.0.0.1:1233", port: 1233, version: "5.4.1", pid: 25548, started_at: "" }), "utf8");
+		const stale = await withEnv({ ...cleanEnv, AUTOTUNER_DATA_DIR: dir }, () => resolveGateway());
+		assert.deepEqual(stale, { root: "http://127.0.0.1:1240", token: TOKEN, enabled: true, source: "settings" });
+		assert.equal(isConfigured(stale), true);
+
+		// The persisted "disabled" flag in the settings file is still a veto.
+		await writeFile(join(dir, "autotuner_settings.json"), settings.replace('"control_api_enabled": true', '"control_api_enabled": false'), "utf8");
 		const disabled = await withEnv({ ...cleanEnv, AUTOTUNER_DATA_DIR: dir }, () => resolveGateway());
-		assert.equal(disabled.source, "sidecar");
 		assert.equal(disabled.enabled, false);
 		assert.equal(disabled.token, "");
 		assert.equal(isConfigured(disabled), false);
+		await writeFile(join(dir, "autotuner_settings.json"), settings, "utf8");
 
 		await writeFile(join(dir, "control_api.json"), JSON.stringify({ schema: 1, enabled: true, base_url: "http://localhost:1250/v1/", port: 1250, token: TOKEN }), "utf8");
 		const enabled = await withEnv({ ...cleanEnv, AUTOTUNER_DATA_DIR: dir }, () => resolveGateway());
@@ -449,5 +460,97 @@ test("/autotuner refresh re-reads credentials, re-registers the provider, and ex
 	} finally {
 		await gateway.close();
 		await rm(dir, { recursive: true, force: true });
+	}
+});
+
+test("AutoTuner started after Pi is picked up by the /model refresh and by session_start without a restart", async () => {
+	const gateway = await startFakeGateway();
+	const dir = await mkdtemp(join(tmpdir(), "autotuner-ext-late-"));
+	try {
+		const { api, providers, handlers } = fakePi();
+		const module = await import("../extensions/autotuner.ts");
+		await withEnv({ ...cleanEnv, AUTOTUNER_DATA_DIR: dir }, async () => {
+			await module.default(api);
+			const initial = providers.at(-1);
+			assert.equal(initial.config.apiKey, "autotuner-not-configured");
+			const refresh = (allowNetwork) => initial.config.refreshModels({ allowNetwork, signal: new AbortController().signal, async publish() { return true; } });
+
+			// Still unconfigured: the selector shows nothing and nothing is contacted.
+			assert.deepEqual(await refresh(true), []);
+			assert.equal(gateway.calls.length, 0);
+
+			// AutoTuner starts and publishes its sidecar; opening /model now lists the models.
+			await writeFile(join(dir, "control_api.json"), JSON.stringify({ schema: 1, enabled: true, base_url: gateway.root, port: Number(new URL(gateway.root).port), token: TOKEN }), "utf8");
+			assert.deepEqual((await refresh(false)), [], "offline refreshes never read credentials or the network");
+			const models = await refresh(true);
+			assert.deepEqual(models.map((model) => model.id), ["qwen3.8-27b", "gemma-4-31b"]);
+			// The registration is replaced right after the refresh so chat requests carry the real token.
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			assert.equal(providers.at(-1).config.apiKey, TOKEN);
+			assert.equal(providers.at(-1).config.models.length, 2);
+		});
+
+		// A fresh Pi process whose startup found nothing reconnects on session_start.
+		const second = fakePi();
+		await rm(join(dir, "control_api.json"), { force: true });
+		await withEnv({ ...cleanEnv, AUTOTUNER_DATA_DIR: dir }, async () => {
+			await module.default(second.api);
+			assert.equal(second.providers.at(-1).config.apiKey, "autotuner-not-configured");
+			await writeFile(join(dir, "control_api.json"), JSON.stringify({ schema: 1, enabled: true, base_url: gateway.root, port: Number(new URL(gateway.root).port), token: TOKEN }), "utf8");
+			const { ctx } = fakeContext();
+			await second.handlers.get("session_start")({ type: "session_start", reason: "new" }, ctx);
+			assert.equal(second.providers.at(-1).config.apiKey, TOKEN);
+			assert.equal(second.providers.at(-1).config.models.length, 2);
+		});
+	} finally {
+		await gateway.close();
+		await rm(dir, { recursive: true, force: true });
+	}
+});
+
+test("quitting Pi unloads only a model this process loaded, never on session switches or when opted out", async () => {
+	const gateway = await startFakeGateway({ active: "gemma-4-31b" });
+	globalThis.__piAutotunerLoadedByPi = false;
+	try {
+		const { api, handlers } = fakePi();
+		const module = await import("../extensions/autotuner.ts");
+		await withEnv({ ...cleanEnv, AUTOTUNER_API_URL: gateway.root, AUTOTUNER_API_KEY: TOKEN }, () => module.default(api));
+		const { ctx } = fakeContext({ model: { provider: "autotuner", id: "gemma-4-31b" } });
+		const stops = () => gateway.calls.filter((call) => call.path === "/api/v1/stop").length;
+
+		// Gemma was already running (started from AutoTuner's GUI): using it does not make it ours.
+		await handlers.get("before_provider_request")({ type: "before_provider_request", payload: { model: "gemma-4-31b" } }, ctx);
+		assert.equal(gateway.state.active, "gemma-4-31b");
+		await withEnv({ AUTOTUNER_UNLOAD_ON_EXIT: undefined }, () => handlers.get("session_shutdown")({ type: "session_shutdown", reason: "quit" }));
+		assert.equal(stops(), 0);
+		assert.equal(gateway.state.active, "gemma-4-31b");
+
+		// Pi loads Qwen itself.
+		ctx.model = { provider: "autotuner", id: "qwen3.8-27b" };
+		await handlers.get("before_provider_request")({ type: "before_provider_request", payload: { model: "qwen3.8-27b" } }, ctx);
+		assert.equal(gateway.state.active, "qwen3.8-27b");
+		assert.equal(globalThis.__piAutotunerLoadedByPi, true);
+
+		// /new, /resume, /fork and /reload keep the model; so does the opt-out.
+		for (const reason of ["new", "resume", "fork", "reload"]) {
+			await handlers.get("session_shutdown")({ type: "session_shutdown", reason });
+		}
+		await withEnv({ AUTOTUNER_UNLOAD_ON_EXIT: "0" }, () => handlers.get("session_shutdown")({ type: "session_shutdown", reason: "quit" }));
+		assert.equal(stops(), 0);
+		assert.equal(gateway.state.active, "qwen3.8-27b");
+
+		// A real quit frees the GPU.
+		await withEnv({ AUTOTUNER_UNLOAD_ON_EXIT: undefined }, () => handlers.get("session_shutdown")({ type: "session_shutdown", reason: "quit" }));
+		assert.equal(stops(), 1);
+		assert.equal(gateway.state.active, null);
+		assert.equal(globalThis.__piAutotunerLoadedByPi, false);
+
+		// With AutoTuner already gone, quitting stays silent and quick.
+		globalThis.__piAutotunerLoadedByPi = true;
+		await gateway.close();
+		await withEnv({ AUTOTUNER_UNLOAD_ON_EXIT: undefined }, () => handlers.get("session_shutdown")({ type: "session_shutdown", reason: "quit" }));
+	} finally {
+		globalThis.__piAutotunerLoadedByPi = false;
+		await gateway.close().catch(() => undefined);
 	}
 });

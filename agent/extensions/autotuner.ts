@@ -13,13 +13,23 @@
  * Credential discovery order (first hit wins):
  *   1. AUTOTUNER_API_URL + AUTOTUNER_API_KEY (or AUTOTUNER_CONTROL_API_KEY)
  *   2. AUTOTUNER_CONTROL_API_PORT (+ key from 1)
- *   3. <AUTOTUNER_DATA_DIR|~/.autotuner>/control_api.json  (AutoTuner ≥ 5.3.9)
+ *   3. <AUTOTUNER_DATA_DIR|~/.autotuner>/control_api.json  (AutoTuner ≥ 5.3.9),
+ *      but only while it carries a token. AutoTuner rewrites the file without a
+ *      token whenever the gateway stops (app closed, API switched off, a second
+ *      instance exiting), so a token-less sidecar is treated as "AutoTuner is
+ *      not running right now" rather than as a veto.
  *   4. <AUTOTUNER_DATA_DIR|~/.autotuner>/autotuner_settings.json, scanned with
  *      regular expressions only. The file holds benchmark results and can be
- *      tens of megabytes, so it is never JSON-parsed here.
+ *      tens of megabytes, so it is never JSON-parsed here. Its persisted
+ *      `control_api_enabled: false` is the only file-based veto.
+ *
+ * Credentials are re-read whenever Pi opens `/model` while unconfigured and on
+ * every session start, so AutoTuner may be started after Pi. A model that this
+ * Pi process loaded is unloaded again when Pi quits (not on /new, /resume,
+ * /fork or /reload); AUTOTUNER_UNLOAD_ON_EXIT=0 keeps it running.
  *
  * `/autotuner` offers an interactive switcher plus status, models, switch,
- * stop, refresh, health and help subcommands.
+ * stop, runtimes, refresh, health and help subcommands.
  */
 
 import type {
@@ -56,6 +66,13 @@ const CONTROL_TIMEOUT_MS = 6_000;
  */
 const SWITCH_TIMEOUT_S = 900;
 const SWITCH_TIMEOUT_MS = (SWITCH_TIMEOUT_S + 20) * 1000;
+/** Bounded so quitting Pi never hangs on a stalled llama-server shutdown. */
+const UNLOAD_TIMEOUT_MS = 10_000;
+/**
+ * Survives `/reload`, which re-evaluates this module: the reloaded instance
+ * still knows that a model was loaded by this Pi process.
+ */
+const LOADED_BY_PI_FLAG = "__piAutotunerLoadedByPi";
 const COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
 const SUBCOMMANDS: AutocompleteItem[] = [
 	{ value: "status", label: "status", description: "Gateway- und Modellstatus anzeigen" },
@@ -213,6 +230,11 @@ async function readSettingsCredentials(dataDir: string): Promise<StoredCredentia
 	}
 }
 
+/** True unless AUTOTUNER_UNLOAD_ON_EXIT is set to 0/false/no/off. */
+export function unloadOnExit(env: NodeJS.ProcessEnv = process.env): boolean {
+	return envBool(env.AUTOTUNER_UNLOAD_ON_EXIT) !== false;
+}
+
 export async function resolveGateway(env: NodeJS.ProcessEnv = process.env): Promise<GatewayConfig> {
 	const dataDir = dataDirectory(env);
 	const envUrl = env.AUTOTUNER_API_URL?.trim() || "";
@@ -220,11 +242,24 @@ export async function resolveGateway(env: NodeJS.ProcessEnv = process.env): Prom
 	const envPort = validPort(env.AUTOTUNER_CONTROL_API_PORT?.trim());
 	const envEnabled = envBool(env.AUTOTUNER_CONTROL_API_ENABLED);
 
-	// The sidecar is authoritative once AutoTuner writes it, including
-	// `enabled: false`; the settings scan only serves older AutoTuner versions.
+	// A sidecar with a token is authoritative. Without one it only says that
+	// the gateway was down when AutoTuner last wrote the file; the persisted
+	// settings (token plus `control_api_enabled`) then decide, and whether the
+	// gateway is reachable is reported by the request itself.
 	const sidecar = await readSidecar(dataDir);
-	const stored = sidecar ?? (await readSettingsCredentials(dataDir));
-	const storedSource: GatewaySource = sidecar ? "sidecar" : stored ? "settings" : "default";
+	const settings = sidecar?.token ? undefined : await readSettingsCredentials(dataDir);
+	let stored: StoredCredentials | undefined;
+	let storedSource: GatewaySource;
+	if (sidecar?.token) {
+		stored = sidecar;
+		storedSource = "sidecar";
+	} else if (settings?.token && settings.enabled !== false) {
+		stored = { ...settings, port: settings.port ?? sidecar?.port, baseUrl: settings.port ? undefined : sidecar?.baseUrl };
+		storedSource = "settings";
+	} else {
+		stored = sidecar ?? settings;
+		storedSource = sidecar ? "sidecar" : settings ? "settings" : "default";
+	}
 
 	let root: string;
 	if (envUrl) root = normalizeRoot(envUrl);
@@ -591,6 +626,14 @@ interface GatewayState {
 	shuttingDown: boolean;
 }
 
+function loadedByPi(): boolean {
+	return (globalThis as Record<string, unknown>)[LOADED_BY_PI_FLAG] === true;
+}
+
+function setLoadedByPi(value: boolean): void {
+	(globalThis as Record<string, unknown>)[LOADED_BY_PI_FLAG] = value;
+}
+
 function modelName(state: GatewayState, modelId: string): string {
 	return state.models.find((model) => model.id === modelId)?.name ?? modelId;
 }
@@ -607,14 +650,29 @@ function registerGateway(pi: ExtensionAPI, state: GatewayState): void {
 		async refreshModels(context) {
 			// Pi calls this on startup and after every provider registration with
 			// allowNetwork=false; the /model selector calls it with network access.
-			if (!context.allowNetwork || context.signal.aborted || !isConfigured(state.gateway)) {
-				return state.models;
+			if (!context.allowNetwork || context.signal.aborted) return state.models;
+			let reregister = false;
+			if (!isConfigured(state.gateway)) {
+				// AutoTuner may have been started (or its API enabled) after Pi:
+				// re-read the credentials whenever the selector opens.
+				try {
+					state.gateway = await resolveGateway();
+				} catch {
+					return state.models;
+				}
+				if (!isConfigured(state.gateway)) return state.models;
+				reregister = true;
 			}
 			// Throwing keeps the previously registered list and surfaces the reason
 			// in the selector instead of silently emptying the provider.
 			const models = await fetchModels(state.gateway, context.signal);
 			state.models = models;
 			state.lastError = undefined;
+			if (reregister) {
+				// The live registration still carries the placeholder key. Re-register
+				// after this refresh has published its list, not in the middle of it.
+				setTimeout(() => registerGateway(pi, state), 0);
+			}
 			return models;
 		},
 	});
@@ -674,6 +732,10 @@ function switchModel(state: GatewayState, ctx: ExtensionContext, modelId: string
 		.then((status) => {
 			state.knownActive = status.active_model ?? modelId;
 			state.lastError = undefined;
+			// A model that was already active before this request (started from
+			// AutoTuner's GUI or by another client) is not ours to unload on quit.
+			const activeSince = typeof status.active_since === "number" ? status.active_since * 1000 : undefined;
+			if (activeSince === undefined || activeSince >= startedAt - 2_000) setLoadedByPi(true);
 			const seconds = Math.round((Date.now() - startedAt) / 1000);
 			notifySafe(ctx, seconds >= 2 ? `✅ AutoTuner: ${label} bereit (${seconds} s)` : `✅ AutoTuner: ${label} bereit`, "info");
 			return status;
@@ -744,7 +806,7 @@ export default async function (pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		if (state.shuttingDown) return;
-		if (isConfigured(state.gateway) && state.models.length === 0) {
+		if (!isConfigured(state.gateway) || state.models.length === 0) {
 			// AutoTuner may have been started or its API enabled after Pi loaded.
 			await connect(pi, state);
 		}
@@ -782,9 +844,19 @@ export default async function (pi: ExtensionAPI) {
 		return undefined;
 	});
 
-	pi.on("session_shutdown", async () => {
+	pi.on("session_shutdown", async (event) => {
 		state.shuttingDown = true;
 		state.switching?.controller.abort();
+		// Only a real exit frees the GPU; /new, /resume, /fork and /reload keep
+		// the model because the next session (or extension instance) still uses it.
+		if (event?.reason !== "quit" || !loadedByPi() || !unloadOnExit() || !isConfigured(state.gateway)) return;
+		try {
+			await gatewayRequest(state.gateway, "POST", "/api/v1/stop", { timeoutMs: UNLOAD_TIMEOUT_MS });
+			setLoadedByPi(false);
+		} catch {
+			// AutoTuner may already be closed, the server may not be API-managed, or
+			// another client still has requests in flight (model_busy). Nothing to do.
+		}
 	});
 
 	pi.registerCommand("autotuner", {
@@ -884,6 +956,7 @@ export default async function (pi: ExtensionAPI) {
 					try {
 						await gatewayRequest<GatewayStatus>(state.gateway, "POST", "/api/v1/stop", { timeoutMs: SWITCH_TIMEOUT_MS });
 						state.knownActive = undefined;
+						setLoadedByPi(false);
 						ctx.ui.notify("AutoTuner: API-verwalteter llama-server gestoppt.", "info");
 					} catch (error) {
 						ctx.ui.notify(describeError(error, state.gateway), "error");
