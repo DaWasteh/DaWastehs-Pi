@@ -31,6 +31,7 @@ few installed pi packages.
 │   │   ├── autotuner.ts       # AutoTuner model gateway (provider + /autotuner)
 │   │   ├── pi-autoupdate.ts
 │   │   ├── post-edit-validation.ts
+│   │   ├── subagent/config.json # native child concurrency/depth defaults
 │   │   ├── skill-governor/    # metadata router and deterministic audit
 │   │   ├── stargate-header.ts
 │   │   └── token-speed.ts
@@ -431,24 +432,82 @@ deliberate exception to the local byte budget.
 
 ### Subagent model hierarchy
 
-The parent orchestrator starts on GPT-5.6 Sol Max. Child roles use the cheapest
-appropriate tier without per-run model overrides:
+The parent orchestrator starts on **GPT-6 Astra High**. v3.0 removes Spark
+from automatic routing and uses central role settings rather than per-run model
+pins. This is an operator-selected quality/context policy, not a measured model
+quality or pricing benchmark.
 
 | Tier | Intended work | Roles |
 | --- | --- | --- |
-| GPT-5.3 Codex Spark Low (128k) | Mechanical repo scans, targeted reproductions, tiny obvious fixes | `scout`, `context-builder`, `delegate`, `bugtester`, `mechanic` |
-| GPT-5.6 Luna Low | Lightweight non-mechanical evidence synthesis | `web-searcher` |
-| GPT-5.6 Terra Low | Substantial implementation and research | `worker`, `researcher` |
-| GPT-5.6 Sol High | Leadership, planning, critical review, architecture judgment | `teamleiter`, `advisor`, `oracle`, `planner`, `reviewer` |
+| GPT-6 Astra High | Leadership, actionable plans, architecture decisions, critical review | `teamleiter`, `planner`, `oracle` (alias `advisor`), `reviewer`, parent |
+| GPT-5.6 Sol High | Reproduction, regression analysis and difficult root causes | `bugtester` |
+| GPT-5.6 Terra Medium | Implementation, focused repairs, substantial research and general delegation | `worker`, `mechanic`, `researcher`, `delegate`, unclassified native roles |
+| GPT-5.6 Luna Low | Focused repository recon and primary-source web evidence | `scout`, `web-searcher` |
 
-Spark is also the subagent default, so unclassified roles do not silently inherit
-the expensive parent model. Local llama-server fallbacks are intentionally omitted
-while the provider/`local` alias is absent from Pi's active model registry:
-pi-subagents validates every fallback before launch, so a configured offline alias
-would block even a healthy cloud primary. Add the exact registered
-`llama-server=http://127.0.0.1:1234/local` candidate only while `/v1/models`
-actually exposes it. Tasks that may exceed Spark's 128k window or require
-non-mechanical judgment must be escalated upward.
+The active Codex registry on this installation reports **272,000 context tokens**
+for Astra and all three 5.6 models, versus Spark's **128,000**. These are context
+windows, not guaranteed input allowances: prompts, tool definitions, history and
+output need room too. No context-limit overrides or priority `fast` tier are
+configured. Spark remains selectable manually for tiny self-contained work, but
+is neither the default nor a fallback.
+
+Workers and evidence roles start fresh with a compact goal/cwd/ref/files/acceptance
+handoff rather than automatically inheriting the entire parent conversation.
+`oracle` keeps its fork preference for decision consistency; an explicit fork is
+still available when history matters. Large-context models still need bounded
+retrieval and checkpoints. Parent `modelThinkingLevels` preferences remain
+separate from explicit child-role thinking.
+
+`planner` is now a real read-only agent, not just a settings entry. The old
+`context-builder` entry never defined an executable role and was removed; use
+`scout`. Custom roles use Pi's base prompt plus their short specialist contracts,
+keep project instructions and have no mandatory RTK prefix. The web-searcher has
+no shell or file-write tools, can selectively use `source_check`, and searches
+with `workflow: "none"` to avoid interactive curator waits. It must not invent
+access dates or label versioned archives as the latest documentation. Bugtester
+may execute bounded read-only/test commands; its `bash` access is **not a sandbox**. Mechanic stays a single scoped writer with regression tests.
+Publication and unresolved architecture/product decisions remain with the parent.
+
+The teamleiter handles small tasks directly, plans up to two useful independent
+analysis paths, or synthesizes completed reports with original-source checks.
+**Only the root parent launches employees** through a native async workflow with
+unique stable child `key` fields and central role routing. Await evidence before
+handing it to the teamleiter; a launch acknowledgement is not a completed report.
+The teamleiter has neither shell nor subagent tools. Runtime limits live in
+`agent/extensions/subagent/config.json`: four concurrent children **per workflow**,
+twelve cumulative launches **per run tree**, two active top-level async runs
+**per session**, depth one. These are defaults, not machine-wide quotas;
+explicit workflow limits can override defaults and inherited stricter ceilings
+remain authoritative. Existing runtime deadlines, supervision and tool checks
+are retained.
+
+#### Migration and validation
+
+Live validation caught two nesting failures: an agent omitted the required
+`runs.all` keys; after correction, its nested async runner disappeared before
+returning results. The owner chose the **flat native team** rather than relying
+on that failing lifecycle path. v3.0 does not claim to fix upstream nested async
+execution; it does not use it. If nesting is reintroduced later, validate its
+full completion lifecycle first, not just successful launch. No CLI/foreground
+fallback or package-source patch was used.
+
+A legacy `~/.agents/teamleiter.md` was shadowing the tracked user role. The local
+migration preserves it as `teamleiter.md.pre-v3.bak` (not discovered as Markdown).
+Other installations should inspect `subagent({ action: "get", agent: "teamleiter" })`
+and reconcile stale project/legacy copies, not maintain two divergent prompts.
+That machine-local backup is not part of this repository.
+
+No automatic model fallbacks are configured: an unavailable local alias can fail
+preflight even when the cloud primary is healthy, and silently downgrading critical
+work is undesirable. Only configure exact registered, available candidates whose
+quality is acceptable. Escalation after a task/test failure is a parent decision,
+not automatic replay. Missing optional Codex/Claude/Cursor CLIs do not affect the
+native roles and are never implicit failure recovery.
+
+Reload/restart Pi after updating; verify `/subagents-models`, `/subagents-doctor`
+and resolved agent paths. `npm test` protects routing and role contracts; the
+release also exercises native role launches, tool use and independent review.
+The audited installed runtime is Pi 0.85.1 with pi-subagents 0.66.0.
 
 ## Editor setup
 

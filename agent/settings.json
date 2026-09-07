@@ -1,7 +1,7 @@
 {
-  "lastChangelogVersion": "0.85.0",
+  "lastChangelogVersion": "0.85.1",
   "defaultProvider": "openai-codex",
-  "defaultModel": "gpt-5.6-sol",
+  "defaultModel": "gpt-6-astra",
   "llamaServerUrl": "http://127.0.0.1:1234",
   "packages": [
     "npm:pi-llama-cpp",
@@ -29,65 +29,57 @@
     "medium": 10240,
     "high": 32768
   },
-  "defaultThinkingLevel": "max",
+  "defaultThinkingLevel": "high",
   "theme": "stargate-sg1",
   "httpIdleTimeoutMs": 0,
   "subagents": {
-    "defaultModel": "openai-codex/gpt-5.3-codex-spark",
-    "defaultThinking": "low",
+    "defaultModel": "openai-codex/gpt-5.6-terra",
+    "defaultThinking": "medium",
     "agentOverrides": {
-      "advisor": {
-        "model": "openai-codex/gpt-5.6-sol",
-        "thinking": "high"
-      },
       "oracle": {
-        "model": "openai-codex/gpt-5.6-sol",
+        "model": "openai-codex/gpt-6-astra",
         "thinking": "high"
       },
       "planner": {
-        "model": "openai-codex/gpt-5.6-sol",
+        "model": "openai-codex/gpt-6-astra",
         "thinking": "high"
       },
       "worker": {
         "model": "openai-codex/gpt-5.6-terra",
-        "thinking": "low"
+        "thinking": "medium",
+        "defaultContext": "fresh"
       },
       "scout": {
-        "description": "Fast mechanical repository reconnaissance for bounded tasks that fit within 128k tokens.",
-        "model": "openai-codex/gpt-5.3-codex-spark",
-        "thinking": "low"
+        "model": "openai-codex/gpt-5.6-luna",
+        "thinking": "low",
+        "defaultContext": "fresh"
       },
       "reviewer": {
-        "model": "openai-codex/gpt-5.6-sol",
-        "thinking": "high"
+        "model": "openai-codex/gpt-6-astra",
+        "thinking": "high",
+        "defaultContext": "fresh"
       },
       "researcher": {
         "model": "openai-codex/gpt-5.6-terra",
-        "thinking": "low"
-      },
-      "context-builder": {
-        "description": "Mechanical context gathering and repository mapping for bounded tasks below 128k tokens.",
-        "model": "openai-codex/gpt-5.3-codex-spark",
-        "thinking": "low"
+        "thinking": "medium",
+        "defaultContext": "fresh"
       },
       "delegate": {
-        "description": "Lightweight mechanical delegation for obvious, tightly scoped tasks below 128k tokens.",
-        "model": "openai-codex/gpt-5.3-codex-spark",
-        "thinking": "low"
+        "model": "openai-codex/gpt-5.6-terra",
+        "thinking": "medium",
+        "defaultContext": "fresh"
       },
       "teamleiter": {
-        "model": "openai-codex/gpt-5.6-sol",
+        "model": "openai-codex/gpt-6-astra",
         "thinking": "high"
       },
       "bugtester": {
-        "description": "Targeted reproduction and mechanical regression testing for bounded bugs below 128k tokens.",
-        "model": "openai-codex/gpt-5.3-codex-spark",
-        "thinking": "low"
+        "model": "openai-codex/gpt-5.6-sol",
+        "thinking": "high"
       },
       "mechanic": {
-        "description": "Small obvious bug fixes and repository chores that need no architectural judgment and fit within 128k tokens.",
-        "model": "openai-codex/gpt-5.3-codex-spark",
-        "thinking": "low"
+        "model": "openai-codex/gpt-5.6-terra",
+        "thinking": "medium"
       },
       "web-searcher": {
         "model": "openai-codex/gpt-5.6-luna",
@@ -97,6 +89,19 @@
   },
   "modelThinkingLevels": {
     "llama-server=http://127.0.0.1:1234/Qwen3.8-27B": "medium",
-    "llama-server=http://127.0.0.1:1234/Qwen3.8-Flash-Next": "medium"
+    "llama-server=http://127.0.0.1:1234/Qwen3.8-Flash-Next": "medium",
+    "autotuner/qwen3.8-27b-ud-q4_k_xl--070c07e1dd": "medium",
+    "autotuner/qwen3.8-27b-ud-q8_k_xl--ad119e05b0": "medium",
+    "autotuner/qwen3.8-27b-ud-q6_k_xl--89f437b896": "medium",
+    "autotuner/qwen3.8-27b-q8_0--a5c8033353": "medium",
+    "autotuner/qwen3.8-27b-ud-q5_k_xl--c8ba297ec9": "medium",
+    "autotuner/qwen3.8-27b-ud-q3_k_xl--f64915ff65": "medium",
+    "autotuner/qwen3.8-27b-ud-iq4_xs--67b95243fc": "medium",
+    "autotuner/qwen3.8-27b-ridge-3.7bpw--33a02dcd52": "medium",
+    "openai-codex/gpt-6-astra": "high",
+    "openai-codex/gpt-5.6-sol": "high",
+    "openai-codex/gpt-5.6-terra": "high",
+    "openai-codex/gpt-5.6-luna": "high",
+    "openai-codex/gpt-5.5": "xhigh"
   }
 }

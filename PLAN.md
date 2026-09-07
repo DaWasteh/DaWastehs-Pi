@@ -1,27 +1,40 @@
-# v2.9 AutoTuner Reconnect, Unload on Quit, and pi-llama-cpp 0.10 Plan
+# v3.0 Astra subagent routing
 
 ## Goal
-Ship `v2.9`: make the AutoTuner gateway connection survive AutoTuner restarts and Pi updates, unload a Pi-loaded model when Pi quits, and stop the post-update patch from warning about pi-llama-cpp 0.10's renamed constant, all regression-free.
+Modernize the personal subagent configuration for the available Astra/5.6 models; remove automatic Spark routing, repair stale role contracts, validate and publish v3.0 only after clean checks/review.
 
-## Findings (2026-09-05)
-- The Pi 0.85.0 update did not change the extension API; typecheck and all v2.8 tests were green before any change.
-- The real cause of the lost connection: AutoTuner rewrites `control_api.json` as `enabled: false` without a token whenever its gateway stops (app closed, API stopped, a second instance exiting). v2.8 treated that file as authoritative and hid every model even though `autotuner_settings.json` still said `control_api_enabled: true` with a valid token. Port 1233 was not listening at the time of the analysis.
-- `pi-llama-cpp` 0.10.0 renamed `DEFAULT_LLAMA_SERVER_URL` to `LLAMA_SERVER_URL`; the package still honours the legacy global `llamaServerUrl` setting, so the warning was cosmetic.
+## Constraints
+- Preserve pre-existing package updates and local model-thinking preferences; no credentials or runtime artifacts in Git.
+- Parent owns settings edits, integration and publication. Independent child checks are read-only; a mechanic smoke may change only an isolated temporary fixture.
+- No invented context sizes, unavailable fallback aliases, priority tiers, or silent CLI fallback.
+- User explicitly approved updating the active `pi-model-routing` skill; lint it before release.
 
 ## Steps
-- [x] Credentials: a token-less sidecar falls back to the settings scan; only a persisted `control_api_enabled: false` or `AUTOTUNER_CONTROL_API_ENABLED=0` vetoes.
-- [x] Late discovery: re-read credentials when `/model` opens while unconfigured and on every session start; re-register the provider with the real token after the refresh.
-- [x] Unload on quit: `session_shutdown` with reason `quit` posts `/api/v1/stop` (10 s cap) when this Pi process loaded the model (judged by `active_since`), never on `/new`, `/resume`, `/fork`, `/reload`; `AUTOTUNER_UNLOAD_ON_EXIT=0` opts out; the flag survives `/reload` via `globalThis`.
-- [x] pi-autoupdate: `patchLlamaServerUrlSource` accepts both constant names and keeps the one found; a missing constant is informational.
-- [x] Governor frontmatter for the two new project-memory skills (BlenderAssets, Borealis-Signal-Godot) so skill lint stays green.
-- [x] Tests: discovery precedence updated, late discovery, quit/unload matrix, patch helper, env parsing (61 tests).
-- [ ] Live check against a running AutoTuner ≥ 5.4.1 with the External control API enabled: `/autotuner health`, `/model` listing, one switch, quit unloads.
+- [x] Inspect actual models, installed Pi/subagents docs, configuration and discovered agent paths.
+- [x] Update central routing, role prompts, legacy shadow, tests and documentation.
+- [x] Run deterministic checks and native async role-validation/review workflows.
+- [x] Resolve findings and accept the reviewed flat-team release candidate.
+
+Publication is parent-owned; the annotated `v3.0` tag and GitHub release record the delivered commit rather than claiming delivery from a candidate checklist.
 
 ## Decisions
-- Reachability, not the sidecar's `enabled` flag, decides whether the gateway is usable; "nicht erreichbar" is the honest message while the settings say enabled.
-- Only a real quit frees the GPU; every session-replacement shutdown keeps the model because the next session still uses it.
-- A model that was active before Pi asked for it is not Pi's to unload.
+- Parent/lead/planner/oracle/reviewer: Astra high; bugtester: Sol high; worker/mechanic/delegate/researcher/default: Terra medium; scout/web-searcher: Luna low.
+- Registry snapshot: Spark 128,000 context; Astra/Sol/Terra/Luna 272,000. This is routing policy, not a quality benchmark.
+- Fresh role handoffs by default, preserving oracle's fork preference. No automatic fallbacks.
+- Create the previously non-executable planner role; remove the phantom context-builder override (use scout), and configure advisor through canonical oracle.
+- Legacy `~/.agents/teamleiter.md` moved reversibly to `teamleiter.md.pre-v3.bak` outside Markdown discovery; canonical version is tracked under `agent/agents/`.
+- Owner approved flat native teams after nested runner failure: only root parent launches evidence children, then passes completed reports to read-only Astra teamleiter. Teamleiter has no shell/subagent tools. Runtime defaults: concurrency 4, cumulative launches/run 12, active async runs/session 2, depth 1. No forced fixed-size team.
 
 ## Verification
-- `npm --prefix agent run typecheck`, `npm --prefix agent test` (61 tests), `npm --prefix agent run skill:lint`.
-- Live: AutoTuner's control API was not running during this session (sidecar `enabled: false`, port 1233 closed); the fake gateway mirrors docs/control-api.md.
+- Initial `subagent models/list/doctor`: Astra registered; old teamleiter shadow reproduced; pi-subagents 0.66.0 matches npm latest.
+- Fresh native discovery after edits resolves all updated roles and canonical user teamleiter.
+- `npm --prefix agent test`: 65/65 passed, including flat-team evidence rules and exact custom-role toolsets. Typecheck passed. Skill lint: 82 skills, 0 errors, 25 pre-existing advisory warnings; edited routing skill has no findings. Both production npm audits: 0 vulnerabilities.
+- Fresh-process native `loadConfig()` verified all five final values (async true, concurrency 4, spawns 12, active async 2, depth 1); native discovery verified canonical user teamleiter and Astra advisor alias with no diagnostics. Existing sessions still need restart for startup-cached defaults.
+- Native workflow `fc1ee3b7-a6dc-4219-8887-2d13b88db041`: bugtester passed with native discovery, mechanic repaired isolated clamp fixture (3 red -> 5 green tests), web tools worked, independent Astra review found no concrete code/config defects.
+- Initial teamleiter child `0dc91859-f5ff-4c51-8e99-65854dfbb16b` failed with empty output; nested workflow `8371faef-d823-46be-be5a-3fd16f5c2e0c` proves missing `runs.all` keys. Prompt/example corrected and native `action:validate` passed. Same-protocol retry `c27de1dd-1f94-48b9-8383-990ffc8ceeef` fixed keys, but nested workflow `9ec98705-1888-4057-82ba-89af90f5433a` failed: runner PID 34936 disappeared before result. No claim that upstream nesting is fixed; owner selected the flat configuration.
+- Web report invented an access date; prompt now requires evidence-backed dates/version claims. Retained correction `7d57058d-8429-4c09-a1f9-fbf93fa7ebdd` passed: official page fetched, unsupported date withdrawn, inference distinguished from exact quotes.
+- Flat workflow `a291362b-724f-498f-8583-7b0d7d6c3b55` completed all three children: Luna scout evidence, independent Astra review (`Merge verdict: OK`), and Astra teamleiter source-checked synthesis (`PASS`). Teamleiter corrected the scout's mistaken freshness interpretation using the actual manifests and builtin alias source; no configuration fix was needed.
+- Parent verified persisted complete states, exact effective models/thinking, fresh contexts and observed process-terminal evidence for bugtester, mechanic, corrected web-searcher, scout, reviewer and teamleiter. Artifacts remain private runtime state.
+
+## Blockers
+No open blocker in the owner-approved flat configuration. Failed nesting is explicitly excluded, not claimed fixed. No CLI/foreground fallback or runtime package-source patch was used. The initial dirty diff was captured outside Git; only intended configuration/docs/tests and the pre-existing audited package state belong in the release.

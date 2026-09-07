@@ -1,0 +1,7 @@
+{
+  "asyncByDefault": true,
+  "globalConcurrencyLimit": 4,
+  "maxSubagentSpawnsPerRun": 12,
+  "maxActiveAsyncRunsPerSession": 2,
+  "maxSubagentDepth": 1
+}
