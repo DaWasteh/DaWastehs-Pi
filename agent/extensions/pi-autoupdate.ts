@@ -47,6 +47,7 @@ import { closeSync, openSync, readFileSync, writeSync } from "node:fs";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { Type } from "typebox";
+import { patchPiSubagentsHostTools } from "../npm/patches/postinstall.cjs";
 
 const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
 const LLAMA_CPP_PACKAGE_NAME = "pi-llama-cpp";
@@ -416,6 +417,18 @@ export default async function (pi: ExtensionAPI) {
       foundPackage = true;
       if (!patch.ok) ok = false;
       if (patch.message) messages.push(patch.message);
+      try {
+        const hostTools = patchPiSubagentsHostTools(root);
+        if (hostTools.found) {
+          messages.push(`✅ ${PI_SUBAGENTS_PACKAGE_NAME} host tool discovery recognizes builtin overrides and preserves declared extension tools${hostTools.changed ? " (patched)" : ""}.`);
+        } else {
+          ok = false;
+          messages.push(`⚠️ Could not find host tool discovery in ${root}; inspect the installed package.`);
+        }
+      } catch (err) {
+        ok = false;
+        messages.push(`⚠️ ${err instanceof Error ? err.message : String(err)}`);
+      }
     }
     if (!foundPackage) messages.push(`ℹ️ ${PI_SUBAGENTS_PACKAGE_NAME} was not found in global/project npm packages.`);
     return { ok, text: messages.join("\n") };
@@ -1501,7 +1514,7 @@ export default async function (pi: ExtensionAPI) {
     description:
       "Update pi and/or its installed packages (extensions, skills, prompts, themes) via the pi CLI. " +
       "`scope` selects what to update: 'all' (default) updates pi and packages, 'self' only pi, " +
-      "'extensions' only packages. On Windows, pi-intercom's detached broker is paused and its respawn lock is held while npm replaces the package, avoiding EBUSY. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234, @xynogen/pix-pretty is refreshed if pix-optimizer needs its icon catalog, pi-subagents async workflow IDs are kept Windows-safe, the Heimdall sandbox is enabled on Linux and disabled on Windows/non-Linux, and known overwritten local package patches are re-applied. " +
+      "'extensions' only packages. On Windows, pi-intercom's detached broker is paused and its respawn lock is held while npm replaces the package, avoiding EBUSY. After package updates, pi-llama-cpp is reset to http://127.0.0.1:1234, @xynogen/pix-pretty is refreshed if pix-optimizer needs its icon catalog, pi-subagents async workflow IDs are kept Windows-safe and tool planning preserves registered builtin overrides plus declared extension tools, the Heimdall sandbox is enabled on Linux and disabled on Windows/non-Linux, and known overwritten local package patches are re-applied. " +
       "Packages whose latest npm version is unresolvable by npm (e.g. published with an unresolved `workspace:*` dependency) are detected via a registry pre-flight and skipped, updating the rest individually, so a single broken upstream release never blocks other updates. " +
       "`check=true` reports whether a pi update is available without installing (package update availability is " +
       "surfaced by pi at startup; there is no dry-run for it). A direct, scope-matching user request authorizes one update without a redundant popup. " +

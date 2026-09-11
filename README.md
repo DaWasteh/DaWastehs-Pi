@@ -91,7 +91,11 @@ while Pi installs package dependencies, before the package is first loaded;
 the update extension re-checks it only during an explicitly requested later
 update. Since v2.6, the check also recognizes pi-subagents' native conditional
 UUID assignment, so current safe releases no longer emit a false compatibility
-warning. Merely starting Pi performs no package-source or OS-config mutation.
+warning. v3.1 also repairs pi-subagents' host-tool discovery when an extension
+wraps a builtin (see below). Both install and explicit update use the same
+tracked repair; unknown discovery implementations are reported as failures
+rather than silently overwritten. Merely starting Pi performs no package-source
+or OS-config mutation.
 
 #### Upstream-publish-bug resilience
 
@@ -481,6 +485,44 @@ explicit workflow limits can override defaults and inherited stricter ceilings
 remain authoritative. Existing runtime deadlines, supervision and tool checks
 are retained.
 
+#### v3.1: builtin wrappers and child tool discovery
+
+pi-subagents 0.67.0 filtered the host registry by `sourceInfo.source` being
+`builtin` or `auto`. Heimdall registers a same-name `bash` wrapper even when its
+sandbox is disabled, and Pi correctly reports that tool's extension provenance.
+The filter therefore omitted a working shell: scouts failed before launch with
+`host runtime does not provide permitted required repository tools [bash]`;
+other shell-using roles could silently lose it. A second bug applied that
+builtin-only host list to every declared tool, silently stripping `web_search`,
+`fetch_content`, `source_check` and `get_search_content` from web children.
+
+The compatibility repair in `agent/npm/patches/postinstall.cjs` checks **registered
+canonical builtin names**, not provenance, and limits host pruning to those
+builtin names. Declared extension tools survive that filter but still need their
+provider loaded in the child. It does not invent absent builtins, forward parent
+implementations, enable undeclared extension tools, remove `excludeTools`/capability
+ceilings, or disable strict required-child-tool validation. Heimdall,
+model routing, the flat team and concurrency/depth limits remain unchanged.
+Regression tests cover both omissions, wrapped/SDK tools, absent builtins,
+declared extension/coordination tools, idempotence, CRLF and unsupported upstream
+layouts. Both source repairs are validated before modifying the package.
+
+After applying the repair, run **`/reload` in each already-running parent Pi
+session** before launching more children; changing files does not replace its
+cached modules. A restart is the alternative. Fresh installs run the patch via
+postinstall, and explicit package updates reapply it. To repair an existing
+installation without updating any package, run `node agent/npm/patches/postinstall.cjs`
+from this repository and then reload.
+
+Release validation: 72 tests and typecheck pass; skill lint reports no errors.
+A lockfile-integrity-verified pristine 0.67.0 package patches successfully and
+remains unchanged on the second pass. Native async scout shell/read and web
+fetch/menu smoke tests pass, and independent Astra review found no blockers.
+The runtime dependency audit still reports **two pre-existing findings**:
+`hono` 4.13.1 (moderate) and `smol-toml` 1.7.0 (high). The v3.0 lockfile produces
+the same findings; this scoped repair does not remediate them. The editor-only
+production audit reports zero findings.
+
 #### Migration and validation
 
 Live validation caught two nesting failures: an agent omitted the required
@@ -488,8 +530,9 @@ Live validation caught two nesting failures: an agent omitted the required
 returning results. The owner chose the **flat native team** rather than relying
 on that failing lifecycle path. v3.0 does not claim to fix upstream nested async
 execution; it does not use it. If nesting is reintroduced later, validate its
-full completion lifecycle first, not just successful launch. No CLI/foreground
-fallback or package-source patch was used.
+full completion lifecycle first, not just successful launch. The v3.0 nesting
+investigation used no CLI/foreground fallback or package-source patch; v3.1's
+separate discovery repair above does not change nesting.
 
 A legacy `~/.agents/teamleiter.md` was shadowing the tracked user role. The local
 migration preserves it as `teamleiter.md.pre-v3.bak` (not discovered as Markdown).
@@ -507,7 +550,9 @@ native roles and are never implicit failure recovery.
 Reload/restart Pi after updating; verify `/subagents-models`, `/subagents-doctor`
 and resolved agent paths. `npm test` protects routing and role contracts; the
 release also exercises native role launches, tool use and independent review.
-The audited installed runtime is Pi 0.85.1 with pi-subagents 0.66.0.
+The v3.0 audited runtime was Pi 0.85.1 with pi-subagents 0.66.0. v3.1 targets
+pi-subagents 0.67.0 on the same Pi host and captures the already-installed
+pi-mcp-adapter 2.33.0 / pi-web-access 0.29.0 package snapshot.
 
 ## Editor setup
 
