@@ -13,11 +13,11 @@
     "skill:report": "node benchmarks/skill-governor/report.mjs"
   },
   "devDependencies": {
-    "@earendil-works/pi-ai": "0.99.1",
-    "@earendil-works/pi-coding-agent": "0.99.1",
-    "@earendil-works/pi-tui": "0.99.1",
+    "@earendil-works/pi-ai": "1.6.0",
+    "@earendil-works/pi-coding-agent": "1.6.0",
+    "@earendil-works/pi-tui": "1.6.0",
     "@types/node": "^22",
-    "typebox": "^1.3.9",
+    "typebox": "^1.4.7",
     "typescript": "^5.9.3"
   }
 }

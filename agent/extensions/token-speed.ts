@@ -118,16 +118,17 @@ function estimateTokens(chars: number): number {
   return chars <= 0 ? 0 : Math.max(1, Math.round(chars / 4));
 }
 
-/** Theme-Farbe passend zum Thinking-Level (gültige ThemeColor-Werte in v0.84.1). */
+/** Theme-Farbe passend zum Thinking-Level (gültige ThemeColor-Werte in Pi 1.x). */
 function thinkingColor(level: ThinkingLevelOff):
   | "thinkingOff" | "thinkingMinimal" | "thinkingLow"
-  | "thinkingMedium" | "thinkingHigh" | "thinkingXhigh" {
+  | "thinkingMedium" | "thinkingHigh" | "thinkingXhigh" | "thinkingMax" {
   switch (level) {
     case "minimal": return "thinkingMinimal";
     case "low": return "thinkingLow";
     case "medium": return "thinkingMedium";
     case "high": return "thinkingHigh";
     case "xhigh": return "thinkingXhigh";
+    case "max": return "thinkingMax";
     default: return "thinkingOff";
   }
 }

@@ -1,40 +1,33 @@
 ---
-name: github-actions-pages-release-workflow
-description: "Add/fix GitHub Actions auto-release + Pages deploy in HTML game repos; diagnose deploy-pages failures without log access. Manual-only; do not use for unrelated work."
-version: 2
-updated: "2026-08-17"
+name: "github-actions-pages-release-workflow"
+description: "Add or fix GitHub Actions auto-release and Pages deploy in HTML game repos, or diagnose deploy-pages failures via annotations. Manual-only; do not use for unrelated CI or app edits."
+version: 3
+updated: "2026-11-21"
 skill-governor-tier: manual
 skill-governor-risk: high
 disable-model-invocation: true
 ---
-## Governance
-Explicit task requirements and repository evidence override this skill; it is manual-only, so run only the explicitly requested stages and treat historical versions, counts, and paths as evidence to re-check.
+## When to Use
+Load manually when adding an automatic GitHub Release job (on push to `main`) to a repo with a Pages deploy, or diagnosing a failing `actions/deploy-pages` / release step without log access (403). Explicit task requirements and repository evidence override this checklist.
 
-# GitHub Actions — Pages Deploy + Release Workflow
-
-## Scope
-Use when adding an automatic GitHub Release job (on push to main) to a repo that already has a Pages deploy, OR when diagnosing a failing actions/deploy-pages / release-creation step where you cannot read the step logs directly (no admin API token). Common in the DaWasteh HTML-game repos (GameOfLife, Pong, Snake Ultimate, Tetris, SandGame, SuperCalc).
-
-## Workflow
-1. Trigger architecture: `on: [push: main, pull_request, workflow_dispatch]`. Remove any `on: release: published`. Add a `release` job: `needs: build`, `if: github.ref == 'refs/heads/main' && github.event_name == 'push'`, `permissions: contents: write`, `concurrency: group: release-${{ github.ref }}`.
-2. Release job steps: checkout (fetch-depth: 0) -> download-artifact -> 'Create release archive': `cd release-artifacts && zip -r "$archive" .` then `echo "ARCHIVE=$archive" >> $GITHUB_ENV` (BARE filename, NOT '../$archive') -> 'Create GitHub Release' using `gh release create "$RELEASE_TAG" "$ARCHIVE" --repo ${{github.repository}} --target main --title ... --notes ...`. Use GH_TOKEN: ${{ github.token }}.
-3. Tag format: `v${{ env.GAME_VERSION }}.${{ github.run_number }}` (e.g. v2.1.15). For repos without a GAME_VERSION env, use `v${{ github.run_number }}`.
-4. Make the release idempotent: check `gh release view "$TAG"` first; if exists, use `gh release upload "$TAG" "$ARCHIVE" --clobber`, else `gh release create`. Avoids duplicate-tag failures on re-runs.
-5. Pages job stays separate (`needs: build`, `if: ...main && push`); keep its own `concurrency: group: pages` to avoid deploy conflicts. SuperCalc-style repos (no build artifact): split monolithic deploy into `build` (generates + upload-artifact) -> parallel `deploy` (Pages) and `release` (zip the artifact).
-6. Validate locally before push: `python -c "import yaml; yaml.safe_load(open(f))"` for every workflow (note: PyYAML parses top-level `on:` as boolean True — check `data[True]`). Run repo-specific smoke tests (e.g. Tetris `node smoke-test.cjs` asserts SHA-pinned actions + top-level `permissions: contents: read`).
-7. To read a FAILED step's error WITHOUT admin API token: GET https://api.github.com/repos/{owner}/{repo}/check-runs/{job_id}/annotations — public-readable for public repos, surfaces `::error::`/`::warning::` workflow-command text. Get job_id from GET /actions/runs/{run_id}/jobs. This is how you read step output when logs return 403.
+## Procedure
+1. Trigger on `push` (`main`), `pull_request`, and `workflow_dispatch`; remove any `on: release: published`. Add a `release` job with `needs: build`, `if: github.ref == 'refs/heads/main' && github.event_name == 'push'`, job-level `permissions: contents: write`, and `concurrency: group: release-${{ github.ref }}`.
+2. In `release`: checkout (`fetch-depth: 0`), download artifact, zip inside `release-artifacts` (`cd release-artifacts && zip -r "$archive" .`), export bare `echo "ARCHIVE=$archive" >> $GITHUB_ENV` (never `../$archive`), and create/update the release via `gh release` using `GH_TOKEN: ${{ github.token }}`.
+3. Tag format: `v${{ env.GAME_VERSION }}.${{ github.run_number }}` (or `v${{ github.run_number }}` when no `GAME_VERSION` exists).
+4. Make releases idempotent: check `gh release view "$TAG"` first; if present run `gh release upload "$TAG" "$ARCHIVE" --clobber`, else `gh release create`.
+5. Keep the Pages job separate (`needs: build`, `concurrency: group: pages`). For repos without a build artifact (SuperCalc-style), split into `build` -> parallel `deploy` and `release`.
+6. Validate YAML locally with `python -c "import yaml; yaml.safe_load(open(f))"` (PyYAML parses `on:` as key `True`) and run any repo smoke test (e.g. Tetris `node smoke-test.cjs` checks SHA-pinned actions and top-level `permissions: contents: read`).
+7. To read a failed step's error without log access, query `GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs` and `GET /repos/{owner}/{repo}/check-runs/{job_id}/annotations`.
 
 ## Pitfalls
-- ARCHIVE path bug: if archive step does `cd release-artifacts` and `zip -r '../$archive'` BUT sets `ARCHIVE=../$archive`, the next step (CWD=repo-root) resolves `../` ABOVE the repo -> `gh` fails with 'no matches found for ../X.zip'. FIX: `echo "ARCHIVE=$archive" >> $GITHUB_ENV`.
-- Do NOT use `rerun-failed-jobs` API on a Pages pipeline whose `upload-pages-artifact` already succeeded: it re-runs upload again -> 2 same-named 'github-pages' artifacts -> deploy-pages aborts with 'Multiple artifacts named github-pages'. Use a fresh `workflow_dispatch` run instead (POST /actions/workflows/{wf_id}/dispatches {"ref":"main"}).
-- 'Timeout reached, aborting!' from deploy-pages is often transient (concurrent deploys from rapid successive pushes); a fresh workflow_dispatch usually fixes it.
-- Tetris smoke-test.cjs asserts NO unpinned `uses: ...@vN` (all must be SHA-pinned) AND top-level `permissions: contents: read`. Put release job's `contents: write` ONLY at job-level, never top-level, or smoke-test breaks.
-- Local folder name may differ from GitHub repo name (e.g. 'Snake Ultimate' vs 'Snake-Ultimate'). Do NOT use remote-name as Python subprocess cwd -> NotADirectoryError.
-- The git credential (gho_ token) works for REST API but `printf|git credential fill` in bash returns garbled token; use Python subprocess with text=True and a real repo dir as cwd.
+- Setting `ARCHIVE=../$archive` after `cd release-artifacts` makes the next step (repo root cwd) look above the repo and fail.
+- Never use `rerun-failed-jobs` after `upload-pages-artifact` succeeded: it creates duplicate `github-pages` artifacts and breaks `deploy-pages`. Dispatch a fresh `workflow_dispatch` instead.
+- Transient `deploy-pages` timeouts usually stem from rapid concurrent pushes; retry via `workflow_dispatch`.
+- Putting `contents: write` at top-level breaks repos whose smoke tests assert top-level `permissions: contents: read`.
+- Local folder names may differ from GitHub repo names (e.g. `Snake Ultimate` vs `Snake-Ultimate`); use the real local directory as cwd.
 
 ## Verification
-1. After push, poll GET /actions/runs?per_page=1 until status=completed. Check conclusion=success.
-2. GET /releases confirms a release exists with the expected tag AND `assets` array non-empty (asset upload is the step most likely to silently fail).
-3. GET /actions/runs/{id}/jobs: every job (lint, build, pages, release) conclusion=success.
-4. HEAD the public Pages URL https://{owner}.github.io/{repo}/ -> HTTP 200 (independent of releases; confirms Pages still live).
-5. Delete any orphaned tag/release created during debugging via DELETE /releases/{id} then DELETE /git/refs/tags/{tag}.
+1. Poll `GET /actions/runs?per_page=1` until `status=completed` and `conclusion=success`, and confirm every job succeeded.
+2. Confirm `GET /releases` has the expected tag with non-empty `assets`.
+3. `HEAD https://{owner}.github.io/{repo}/` returns HTTP 200.
+4. Remove any temporary debugging tag/release via API if created.

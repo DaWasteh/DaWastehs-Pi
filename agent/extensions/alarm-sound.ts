@@ -346,10 +346,12 @@ export default function (pi: ExtensionAPI) {
     lastAgentRunCompleted = shouldPlayForAgentEnd(event);
   });
 
-  pi.on("agent_settled", async (_event, ctx) => {
+  pi.on("agent_settled", async (event, ctx) => {
     // Erst jetzt garantiert Pi, dass keine automatische Fortsetzung mehr folgt.
-    if (shouldPlayForMode(ctx) && lastAgentRunCompleted) {
-      lastAgentRunCompleted = false;
+    // Abgebrochene Läufe (`event.aborted`, ab Pi 1.1) lösen keinen Abschluss-Alarm aus.
+    const completed = lastAgentRunCompleted;
+    lastAgentRunCompleted = false;
+    if (shouldPlayForMode(ctx) && completed && !event?.aborted) {
       playAlarm("agent-complete");
     }
   });

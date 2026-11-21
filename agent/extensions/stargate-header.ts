@@ -21,7 +21,7 @@
 
 import type { Skill } from "@earendil-works/pi-coding-agent";
 import type { ExtensionAPI, Theme } from "@earendil-works/pi-coding-agent";
-import { VERSION } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, VERSION } from "@earendil-works/pi-coding-agent";
 import {
 	Image,
 	getCapabilities,
@@ -91,11 +91,8 @@ let protocolGateImage: Image | undefined;
 
 // ─── ALLGEMEINE HELFER ───────────────────────────────────────────────────────
 
-function homeDir(): string {
-	return process.env.HOME || process.env.USERPROFILE || "";
-}
 function agentDir(): string {
-	return join(homeDir(), ".pi", "agent");
+	return getAgentDir();
 }
 function projectPiDir(): string {
 	return join(process.cwd(), ".pi");

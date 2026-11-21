@@ -113,6 +113,11 @@ function skillMatches(query: string, catalog: Skill[], limit: number): Capabilit
   }));
 }
 
+function extractUserPromptText(event: { messageType?: string; prompt?: unknown }): string {
+  if (event.messageType === "custom") return "";
+  return typeof event.prompt === "string" ? event.prompt : "";
+}
+
 function compareMatches(a: CapabilityMatch, b: CapabilityMatch): number {
   return b.score - a.score || a.name.localeCompare(b.name) || a.type.localeCompare(b.type);
 }
@@ -286,11 +291,12 @@ export default function skillGovernor(pi: ExtensionAPI): void {
     if (!config.enabled) return undefined;
     catalog = event.systemPromptOptions?.skills ?? catalog;
     const base = event.systemPrompt.replace(SKILL_BLOCK, "");
+    const promptText = extractUserPromptText(event);
     // Headless local sessions (subagents, `--mode json`) keep Pi's full prompt
     // and their configured tools; only the routed-skill count is reduced.
     if (!currentLocal || !profileApplies(ctx)) {
       const limit = currentLocal ? config.routing.maxSkillsLocal : config.routing.maxSkills;
-      const selected = rankSkills(event.prompt ?? "", catalog, config.routing.minScore, limit).map((row) => visibleSkill(row.skill));
+      const selected = rankSkills(promptText, catalog, config.routing.minScore, limit).map((row) => visibleSkill(row.skill));
       return { systemPrompt: selected.length > 0 ? base + formatSkillsForPrompt(selected) : base };
     }
     // Interactive local profile: the governor-owned prompt stays within the
@@ -301,7 +307,7 @@ export default function skillGovernor(pi: ExtensionAPI): void {
     const byteLimit = config.routing.maxLocalSystemPromptBytes;
     let systemPrompt = explicitPrompt ? base : compactLocalPrompt(event.systemPromptOptions?.cwd ?? process.cwd(), byteLimit);
     if (Buffer.byteLength(systemPrompt, "utf8") > byteLimit) return { systemPrompt };
-    for (const selected of rankSkills(event.prompt ?? "", catalog, config.routing.minScore, config.routing.maxSkillsLocal)) {
+    for (const selected of rankSkills(promptText, catalog, config.routing.minScore, config.routing.maxSkillsLocal)) {
       const candidate = systemPrompt + formatCompactLocalSkill(selected.skill);
       if (Buffer.byteLength(candidate, "utf8") > byteLimit) break;
       systemPrompt = candidate;

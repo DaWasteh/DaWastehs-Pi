@@ -27,6 +27,10 @@ bin/
 # Do not track them: Windows/Linux/macOS would otherwise keep flipping them.
 agent/heimdall.json
 agent/heimdall.default.jsonc
+agent/mcp-last-seen-version.json
+agent/mcp-onboarding.json
+agent/pi-subagents/
+agent/pi-web-access/
 agent/run-history.jsonl
 agent/models-store.json
 agent/missions/

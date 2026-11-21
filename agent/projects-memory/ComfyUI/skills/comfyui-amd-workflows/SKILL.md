@@ -1,8 +1,8 @@
 ---
 name: comfyui-amd-workflows
-description: "Building and repairing ComfyUI workflow JSONs on AMD GPUs (RDNA4 locally, RDNA2 for Kevin's RX 6800). Use for any ComfyUI error, workflow graph edit, face-preservation/FaceID pipeline, ACE-Step audio generation, IPAdapter/InsightFace issue, or comfyui-rocm installation/repair. No CUDA exists on these machines. Manual-only; do not use for unrelated work."
-version: 2
-updated: "2026-08-17"
+description: "Build and repair ComfyUI workflow JSONs on AMD GPUs (FaceID, IPAdapter/InsightFace CPU, ACE-Step, RDNA2/RDNA4 ROCm). Manual-only; do not use for unrelated work."
+version: 3
+updated: "2026-11-21"
 skill-governor-tier: manual
 skill-governor-risk: high
 disable-model-invocation: true

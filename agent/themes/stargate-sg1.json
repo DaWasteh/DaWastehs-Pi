@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/earendil-works/pi/main/packages/coding-agent/src/modes/interactive/theme/theme-schema.json",
+  "$schema": "https://pi.dev/schemas/theme.schema.json",
   "name": "stargate-sg1",
   "vars": {
     "sgc-orange": "#ff9900",
@@ -33,7 +33,11 @@
     "dim": "sgc-dim",
     "text": "sgc-gold",
     "thinkingText": "sgc-muted",
+    "scrollbarTrack": "sgc-border",
+    "scrollbarThumb": "sgc-orange",
     "selectedBg": "sgc-bg",
+    "searchMatchBg": "sgc-bg",
+    "searchMatchText": "sgc-warn",
     "userMessageBg": "sgc-user-bg",
     "userMessageText": "sgc-gold",
     "customMessageBg": "sgc-user-bg",
@@ -72,6 +76,7 @@
     "thinkingMedium": "sgc-warn",
     "thinkingHigh": "sgc-orange",
     "thinkingXhigh": "sgc-red",
+    "thinkingMax": "sgc-red",
     "bashMode": "sgc-gold"
   }
 }

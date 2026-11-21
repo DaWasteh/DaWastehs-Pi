@@ -1,8 +1,8 @@
 ---
 name: check-rdna4-custom-node-compatibility
-description: "Check and repair L:/ComfyUI custom nodes for Windows RDNA4 compatibility after updates. Use for Triton/xformers/onnxruntime-gpu/CUDA-only import failures, DWPose/SAM acceleration issues, or custom-node requirements that corrupt the ROCm environment. Manual-only; do not use for unrelated work."
-version: 2
-updated: "2026-08-17"
+description: "Audit and repair L:/ComfyUI custom nodes for Windows RDNA4 (Triton/xformers/CUDA imports, DirectML ONNX, ROCm preservation). Manual-only; do not use for unrelated work."
+version: 3
+updated: "2026-11-21"
 skill-governor-tier: manual
 skill-governor-risk: high
 disable-model-invocation: true

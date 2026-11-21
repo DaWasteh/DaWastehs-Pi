@@ -14,7 +14,7 @@ Use for llama-server/llama-bench device flags, model placement, VRAM/KV sizing, 
 2. For a model intentionally split across both AMD cards, start from `--device Vulkan0,Vulkan1 -ts 1,2`. Prefer `--device Vulkan1` for a single-card run needing more than roughly 12 GB for weights plus KV.
 3. Budget measured weight, KV, graph, and runtime allocations together. Never use `--mlock` when the GGUF approaches/exceeds the 48 GB system RAM.
 4. For OOM work, change one bounded axis at a time: ubatch, context, KV precision, GPU layers, then host cache/spill. KV type changes require a restart.
-5. Treat two independent servers on distinct ports/cards as a concurrency option, not as an automatic default. Port 1234 remains primary.
+5. Prefer AutoTuner's control gateway on `127.0.0.1:1233` (which manages `llama-server` on port 1234) instead of launching competing manual servers. Treat two independent servers on distinct ports/cards as an opt-in concurrency option, not an automatic default.
 6. Benchmark the real model and compare observed throughput/VRAM rather than inferring performance from one log field.
 
 ## Pitfalls

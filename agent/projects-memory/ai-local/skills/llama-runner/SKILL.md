@@ -1,8 +1,8 @@
 ---
 name: llama-runner
-description: "Working on llama_runner.py, the unified self-healing launcher for llama-server (OOM recovery, repetition detection, benchmark mode). Use for ANY change to model presets, start scripts, escalation logic, benchmark grids, or when a local model crashes/loops/OOMs. Project-local skill for C:\\LAB\\ai-local. Manual-only; do not use for unrelated work."
-version: 2
-updated: "2026-08-17"
+description: "Maintain L:\\LAB\\ai-local\\llama_runner.py presets, OOM escalation, repetition detection, and benchmark mode for llama-server. Manual-only; do not use for unrelated work."
+version: 3
+updated: "2026-11-21"
 skill-governor-tier: manual
 skill-governor-risk: high
 disable-model-invocation: true

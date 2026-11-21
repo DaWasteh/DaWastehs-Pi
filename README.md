@@ -58,6 +58,7 @@ Command:
 - `/update` — update Pi and all packages
 - `/update self` — update Pi only
 - `/update extensions` — update packages only
+- `/update models` — refresh model catalogs (`pi update --models`)
 - `/update check` — report whether a Pi (self) update is available
 
 Tool (`pi_update`, callable by the model):
@@ -345,9 +346,13 @@ reflects the package set managed by `pi update`.
 
 ## Heimdall sandbox and OS-local state
 
-`agent/heimdall.json` is intentionally **not** tracked. Heimdall's sandbox uses
-Linux `bubblewrap`, so the bundled `pi-autoupdate.ts` extension keeps the real
-local config aligned with the current OS:
+Heimdall's sandbox uses Linux `bubblewrap`. Since `@casualjim/pi-heimdall` 0.3.32,
+Heimdall stores user config universally in `~/.config/heimdall/config.json` (and
+defaults `sandbox.enabled` to `false` in `~/.config/heimdall/default.jsonc`),
+migrating and deleting legacy `agent/heimdall.json` automatically. The bundled
+`pi-autoupdate.ts` extension detects whether the installed Heimdall uses the
+universal config directory or legacy `agent/heimdall.json` and keeps it aligned
+with the current OS:
 
 - Linux: `sandbox.enabled = true`
 - Windows: `sandbox.enabled = false`
@@ -554,6 +559,67 @@ The runtime dependency audit still reports **two pre-existing findings**:
 `hono` 4.13.1 (moderate) and `smol-toml` 1.7.0 (high). The v3.0 lockfile produces
 the same findings; this scoped repair does not remediate them. The editor-only
 production audit reports zero findings.
+
+#### v3.6: Pi 1.6.0 compatibility, updater repairs, and local/cloud skill polish
+
+Align all local extensions, tests, editor/SDK declarations, theme schema, and
+skills with **Pi 1.6.0** and the current installed extension packages
+(`pi-subagents` **0.89.2**, `pi-web-access` **0.48.0**, `pi-mcp-adapter`
+**7.0.1**, `pi-hermes-memory` **0.11.0**, `pi-intercom` **0.18.1**,
+`@casualjim/pi-heimdall` **0.3.32**, `@xynogen/pix-optimizer` **1.3.14**,
+`@juicesharp/rpiv-*` **2.15.0**, `pi-goal-x` **0.34.1**).
+
+- **Updater & postinstall (`/update`, `pi-autoupdate.ts`, `postinstall.cjs`)**:
+  - Recognize `pi-subagents` 0.89.2's `workflowResumeLaunch?.presetRunId ?? randomUUID()`
+    assignment as filesystem-safe instead of throwing an unsupported-assignment
+    error during `postinstall` or `/update`.
+  - Recognize `@xynogen/pix-optimizer` 1.3.14's native
+    `@xynogen/pix-runtime/binaries` (`resolveTool("rtk")`) resolver instead of
+    failing the legacy `which`-probe check.
+  - Align Heimdall sandbox handling with `@casualjim/pi-heimdall` 0.3.32's
+    universal `~/.config/heimdall/config.json` path (avoiding recreation of the
+    migrated/deleted legacy `agent/heimdall.json`).
+  - Fix Pi 1.5+/1.6.0 `StringEnum` scope narrowing in `pi_update` and add
+    `/update models` (`pi update --models`).
+- **Post-edit validation (`post-edit-validation.ts`)**:
+  - Keep the PowerShell literal-path parser fix (`powerShellParseArgs`) so paths
+    with spaces, quotes, or metacharacters parse safely without unbound `$args`.
+  - Recognize Pi 1.5+/1.6.0's `spawn <cmd> ENOENT` stderr signature as an
+    unavailable optional runtime instead of injecting false validation failures.
+  - Cap validator output via Pi 1.5+'s `maxBuffer` (2 MiB), treat `truncated`
+    results as explicit failures, and skip files deleted before `turn_end`.
+- **Skill Governor, footer, header, alarm & theme**:
+  - Handle Pi 1.2+'s `BeforeAgentStartEvent` union (`"user"` vs `"custom"`) in
+    `skill-governor/index.ts` so extension-triggered turns compile cleanly and
+    never route spurious skills.
+  - Map Pi's `max` thinking level to `thinkingMax` in `token-speed.ts`, ignore
+    aborted `agent_settled` runs in `alarm-sound.ts`, use `getAgentDir()` in
+    `stargate-header.ts`, and update `themes/stargate-sg1.json` to the Pi 1.2+
+    schema (`https://pi.dev/schemas/theme.schema.json`) with fullscreen
+    scrollbar/search and `thinkingMax` tokens.
+- **Skills & hygiene**:
+  - Add missing governance metadata and negative triggers to the 7 new project
+    skills (`GitHub/refresh-windows-app-builds` and 6 `Half-Life 3` skills).
+  - Tighten descriptions on 3 oversized project skills so all **101** skills fit
+    within the 900-byte local prompt cap even on 60-character working paths.
+  - Refresh `pi-model-routing`, `amd-dual-gpu-inference`, `pandaking-system`,
+    `mcp-server-golden-rules`, `github-actions-pages-release-workflow`,
+    `troubleshoot-github-pages-readme-instead-of-app`, and
+    `validate-local-pi-extensions` for Pi 1.6.0 and local AutoTuner + cloud AI.
+  - Ignore volatile runtime markers (`agent/mcp-last-seen-version.json`,
+    `agent/mcp-onboarding.json`, `agent/pi-subagents/`, `agent/pi-web-access/`)
+    and strip machine-local `deviceId` from tracked `agent/settings.json`.
+- **Security & validation**:
+  - `npm --prefix agent/npm audit fix` resolves 11 of 12 transitive runtime
+    advisories (eliminating 1 critical `proxy-addr`, 4 high `body-parser`,
+    `brace-expansion`, `undici`, `zod`, and 6 moderate findings); only upstream
+    `minimatch` inside `pi-prompt-template-model` remains (requires breaking
+    downgrade, intentionally not forced). `agent` devDependencies audit clean
+    (0 vulnerabilities).
+  - **101 unit tests**, `tsc --noEmit` against Pi **1.6.0**, `skill:lint`
+    (**101 skills, 0 errors**), isolated loading of all 7 local extensions, and
+    `npm run test:installed` against both the local SDK and global Pi **1.6.0**
+    (**21 entry points, 51 tools, 0 errors/warnings**) all pass.
 
 #### v3.5: AutoTuner-only local models and warning-free host peers
 

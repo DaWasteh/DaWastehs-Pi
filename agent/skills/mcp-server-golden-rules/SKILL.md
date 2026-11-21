@@ -10,12 +10,12 @@ skill-governor-risk: medium
 Use for MCP server architecture, tool/resource/prompt definitions, stdio or Streamable HTTP, schema validation, CORS/session bugs, and LLM-tool hardening. Confirm the repository's pinned MCP SDK/spec version before changing protocol behavior.
 
 ## Procedure
-1. Separate resources (readable data), prompts (reusable templates), and tools (actions). Keep each tool focused with a precise schema and safe defaults.
+1. Separate resources (readable data), prompts (reusable templates), and tools (actions). Keep each tool focused with a strict, explicit JSON Schema (every property typed; avoid untyped `items: {}` or loose unions that break strict cloud providers or confuse local models).
 2. Use stdio for local process integration with JSON-RPC-only stdout and logs on stderr.
 3. Use Streamable HTTP for remote/browser integration (`POST /mcp`, protocol/session headers, optional streaming). Add legacy HTTP+SSE compatibility only when the target client requires it.
 4. Validate every argument before side effects and return structured MCP/JSON-RPC errors instead of crashing.
-5. Keep inference/GPU choices outside generic server code. Use `security-and-pentesting-golden-rules` for untrusted model/tool boundaries.
-6. Preserve explicit task endpoints, paths, auth, and compatibility constraints; examples here do not replace them.
+5. For Pi 1.x integrations, verify server registration and tool exposure (`direct` vs. `codemode`/`deferred`) with `pi mcp list` and keep descriptions concise so tool search ranks accurately without bloating local context.
+6. Keep inference/GPU choices outside generic server code. Use `security-and-pentesting-golden-rules` for untrusted model/tool boundaries, and preserve explicit task endpoints, paths, auth, and compatibility constraints.
 
 ## Pitfalls
 - Broad kitchen-sink tools are difficult for models to call correctly and hard to authorize.

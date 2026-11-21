@@ -94,6 +94,18 @@ async function resolveBash(): Promise<string | undefined> {
   return undefined;
 }
 
+/** -Command does not bind trailing native arguments to $args. Keep paths as
+ * single-quoted PowerShell data inside the one command argument, never code. */
+export function powerShellParseArgs(file: string): string[] {
+  const literalPath = `'${file.replaceAll("'", "''")}'`;
+  return [
+    "-NoProfile",
+    "-NonInteractive",
+    "-Command",
+    `$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile(${literalPath},[ref]$tokens,[ref]$errors)|Out-Null;if($errors.Count){$errors|ForEach-Object ToString;exit 1}`,
+  ];
+}
+
 async function checksForFiles(files: string[]): Promise<ValidationCheck[]> {
   const inProcessChecks: ValidationCheck[] = [];
   const externalChecks: ValidationCheck[] = [];
@@ -101,6 +113,7 @@ async function checksForFiles(files: string[]): Promise<ValidationCheck[]> {
   let bashCommand: string | undefined | null = null;
 
   for (const file of [...files].sort()) {
+    if (!await exists(file)) continue;
     const lower = file.toLowerCase();
     const extension = extname(lower);
 
@@ -167,13 +180,7 @@ async function checksForFiles(files: string[]): Promise<ValidationCheck[]> {
         name: "powershell-parse",
         files: [file],
         command: powershell,
-        args: [
-          "-NoProfile",
-          "-NonInteractive",
-          "-Command",
-          "$tokens=$null;$errors=$null;[System.Management.Automation.Language.Parser]::ParseFile($args[0],[ref]$tokens,[ref]$errors)|Out-Null;if($errors.Count){$errors|ForEach-Object ToString;exit 1}",
-          file,
-        ],
+        args: powerShellParseArgs(file),
         cwd: SAFE_COMMAND_CWD,
       });
       continue;
@@ -214,6 +221,15 @@ function unavailableError(error: unknown): boolean {
   const code = (error as NodeJS.ErrnoException | undefined)?.code;
   const message = error instanceof Error ? error.message : String(error);
   return code === "ENOENT" || /(?:ENOENT|not recognized|command not found)/i.test(message);
+}
+
+/** Pi 1.5+ puts child spawn errors such as `spawn python ENOENT` into stderr instead of leaving stderr empty. */
+export function isSpawnMissingOutput(stdout: string, stderr: string): boolean {
+  const out = stdout.trim();
+  const err = stderr.trim();
+  if (out.length > 0) return false;
+  if (err.length === 0) return true;
+  return /^spawn\s+.+\s+ENOENT$/i.test(err) || /ENOENT:.*spawn/i.test(err);
 }
 
 function normalizePath(value: string): string {
@@ -270,20 +286,24 @@ async function runCheck(
       cwd: check.cwd,
       signal,
       timeout: VALIDATION_TIMEOUT_MS,
+      maxBuffer: 2 * 1024 * 1024,
     });
     let output = `${result.stdout}${result.stderr}`.trim();
     // pi.exec resolves instead of throwing when the executable is missing:
-    // a non-zero code with no output at all is the spawn-failure signature.
-    if (result.code !== 0 && !result.killed && output.length === 0) {
+    // older Pi returns empty output; Pi 1.5+ puts `spawn <cmd> ENOENT` in stderr.
+    if (result.code !== 0 && !result.killed && !result.truncated && isSpawnMissingOutput(result.stdout, result.stderr)) {
       return { name: check.name, files: check.files, command: displayCommand(check), exitCode: 0, output: "", unavailable: true };
     }
     if (result.killed) {
+      const reason = result.truncated
+        ? "validator output exceeded buffer limit; the files were not completely validated"
+        : `validator timed out after ${Math.round(VALIDATION_TIMEOUT_MS / 1000)} s; the files were not validated`;
       return {
         name: check.name,
         files: check.files,
         command: displayCommand(check),
         exitCode: 1,
-        output: `${output}\nvalidator timed out after ${Math.round(VALIDATION_TIMEOUT_MS / 1000)} s; the files were not validated`.trim(),
+        output: `${output}\n${reason}`.trim(),
       };
     }
     if (check.name === "typescript-noemit" && result.code !== 0) {
@@ -293,7 +313,7 @@ async function runCheck(
       name: check.name,
       files: check.files,
       command: displayCommand(check),
-      exitCode: result.code,
+      exitCode: result.truncated && result.code === 0 ? 1 : result.code,
       output,
     };
   } catch (error) {

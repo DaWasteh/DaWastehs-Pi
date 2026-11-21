@@ -203,6 +203,38 @@ test("edited JavaScript tests are parsed but never executed automatically", asyn
   }
 });
 
+test("PowerShell paths are literal data in the command, not unbound trailing arguments", async () => {
+  const { powerShellParseArgs } = await import("../extensions/post-edit-validation.ts");
+  const path = "C:\\project space\\O'Brien\\valid'; exit 77; # $ &.ps1";
+  const args = powerShellParseArgs(path);
+  assert.deepEqual(args.slice(0, 3), ["-NoProfile", "-NonInteractive", "-Command"]);
+  assert.equal(args.length, 4);
+  assert.ok(args[3].includes(`ParseFile('${path.replaceAll("'", "''")}',`));
+  assert.ok(!args[3].includes("$args[0]"));
+});
+
+test("real Windows PowerShell accepts special-character paths and rejects actual syntax errors", async (t) => {
+  if (process.platform !== "win32") { t.skip("Windows PowerShell only"); return; }
+  const root = await mkdtemp(join(tmpdir(), "post edit O'Brien $ & "));
+  try {
+    const module = await import("../extensions/post-edit-validation.ts");
+    const valid = join(root, "valid'; exit 77; #.ps1");
+    const invalid = join(root, "bad' & $ space.ps1");
+    await writeFile(valid, "throw 'this script must only be parsed, never executed'\n", "utf8");
+    await writeFile(invalid, "function Broken {\n", "utf8");
+    const checks = await module.postEditValidationInternals.checksForFiles([valid, invalid]);
+    assert.equal(checks.length, 2, "PowerShell validator must remain enabled");
+    for (const check of checks) {
+      const result = spawnSync(check.command, check.args, { cwd: check.cwd, encoding: "utf8" });
+      assert.ifError(result.error);
+      assert.equal(result.status, check.files[0] === valid ? 0 : 1, result.stdout + result.stderr);
+      if (check.files[0] === invalid) assert.ok((result.stdout + result.stderr).trim().length > 0);
+    }
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("Python syntax validation isolates site and user startup hooks", async (t) => {
   const root = await mkdtemp(join(tmpdir(), "post-edit-python-isolated-"));
   try {

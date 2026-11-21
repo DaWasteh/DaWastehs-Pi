@@ -86,9 +86,9 @@ function resolvePiSubagentsSource(packageRoot, relativePath) {
   return undefined;
 }
 
-/** Recognize workflow IDs that are always either a UUID or absent. */
+/** Recognize workflow IDs that are always either a UUID, a claimed preset UUID, or absent. */
 function hasFilesystemSafePiSubagentsAsyncWorkflowId(source) {
-  return /\bconst\s+workflowRunId\s*=\s*(?:randomUUID\(\)|[^\r\n;?]+\?\s*randomUUID\(\)\s*:\s*undefined)\s*;/.test(source);
+  return /\bconst\s+workflowRunId\s*=\s*(?:randomUUID\(\)|[^\r\n;?]+\?\s*(?:workflowResumeLaunch\?\.presetRunId\s*\?\?\s*)?randomUUID\(\)\s*:\s*undefined)\s*;/.test(source);
 }
 
 /**

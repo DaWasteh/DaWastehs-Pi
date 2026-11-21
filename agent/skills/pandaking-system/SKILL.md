@@ -15,7 +15,7 @@ Use for machine-specific commands, scripts, path selection, build settings, GPU/
 3. Distinguish OS identities: Windows `Pandaking`/`C:\Users\Sebas`; Ubuntu `KillMicroslop`/`/home/dawasteh`. Windows prefers Vulkan; Ubuntu can use ROCm/HIP.
 4. Resolve the task's actual drive before using remembered lab paths. Common roots include `L:\LAB\ai-local`, `I:\models`, and `C:\Users\Sebas\.pi`, but they are context, not defaults that override the request.
 5. Use VS 2026 (`"Visual Studio 18 2026"`, toolset v180), CMake >=4.2, Node >=22, and modern Python. Apply `powershell-windows-scripting` only for Windows scripting work.
-6. Check port 1234 before starting another llama-server. Keep model families in separate `I:\models\<family>` folders.
+6. Local LLM serving goes through AutoTuner's control gateway on `127.0.0.1:1233` (proxying `llama-server` on port 1234); check both ports before starting a manual server. Keep model families in separate `I:\models\<family>` folders.
 7. Before boot/ESP operations, manually load `dualboot-separated-drives` and re-observe device mappings.
 
 ## Pitfalls

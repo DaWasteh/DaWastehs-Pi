@@ -45,6 +45,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { closeSync, openSync, readFileSync, writeSync } from "node:fs";
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { Type } from "typebox";
 import { patchInstalledExtensionHostPeers, patchPiSubagents, patchPiSubagentsHostTools, hasFilesystemSafePiSubagentsAsyncWorkflowId } from "../npm/patches/postinstall.cjs";
@@ -127,6 +128,102 @@ export function patchPiIntercomBrokerCwdSource(source: string): { found: boolean
     found: true,
     next: source.replace(assignment[0], `${assignment[1]}getIntercomDirPath(), // Do not lock this package directory on Windows.`),
   };
+}
+
+export function patchPixOptimizerRtkSource(source: string): {
+  status: "upstream-native" | "patched" | "already-patched" | "unsupported";
+  next: string;
+} {
+  // @xynogen/pix-optimizer >= 1.3.x resolves rtk via @xynogen/pix-runtime/binaries
+  // without spawning POSIX `which` or printing the outdated cargo install hint.
+  if (
+    /@xynogen\/pix-runtime\/binaries/.test(source)
+    && /\bresolveTool\s*\(\s*["']rtk["']\s*\)/.test(source)
+    && !/\bpi\.exec\s*\(\s*["']which["']/.test(source)
+  ) {
+    return { status: "upstream-native", next: source };
+  }
+
+  const oldCheck = `	// Check if rtk binary is available
+	const checkRtkAvailability = async (): Promise<RtkStatus> => {
+		// Cache for 60 seconds
+		if (rtkStatus && Date.now() - rtkStatus.checkedAt < 60000) {
+			return rtkStatus;
+		}
+
+		try {
+			const result = await pi.exec("which", ["rtk"], { timeout: 1000 });
+			if (result.code === 0 && result.stdout?.trim()) {
+				rtkStatus = {
+					available: true,
+					checkedAt: Date.now(),
+					path: result.stdout.trim(),
+				};
+				warnedMissing = false;
+				return rtkStatus;
+			}
+		} catch (_error) {
+			// which command failed
+		}
+
+		rtkStatus = {
+			available: false,
+			checkedAt: Date.now(),
+		};
+		return rtkStatus;
+	};`;
+  const newCheck = `	// Check if rtk binary is available
+	const checkRtkAvailability = async (): Promise<RtkStatus> => {
+		// Cache for 60 seconds
+		if (rtkStatus && Date.now() - rtkStatus.checkedAt < 60000) {
+			return rtkStatus;
+		}
+
+		const markAvailable = (path = "rtk"): RtkStatus => {
+			rtkStatus = {
+				available: true,
+				checkedAt: Date.now(),
+				path,
+			};
+			warnedMissing = false;
+			return rtkStatus;
+		};
+
+		try {
+			const result = await pi.exec("rtk", ["--version"], { timeout: 1000 });
+			if (result.code === 0) return markAvailable();
+		} catch (_error) {
+			// direct probe failed; fall back to PATH locator
+		}
+
+		try {
+			const locator = process.platform === "win32" ? "where.exe" : "which";
+			const result = await pi.exec(locator, ["rtk"], { timeout: 1000 });
+			const path = result.stdout?.trim().split(/\\r?\\n/)[0];
+			if (result.code === 0 && path) return markAvailable(path);
+		} catch (_error) {
+			// locator command failed
+		}
+
+		rtkStatus = {
+			available: false,
+			checkedAt: Date.now(),
+		};
+		return rtkStatus;
+	};`;
+
+  let next = source.includes(oldCheck) ? source.replace(oldCheck, newCheck) : source;
+  next = next.replace(
+    "rtk not found — RTK rewriting disabled. Install: cargo install rtk-ai",
+    "rtk not found — RTK rewriting disabled. Install: cargo install --git https://github.com/rtk-ai/rtk",
+  );
+
+  const hasWorkingProbe =
+    next.includes('pi.exec("rtk", ["--version"]') || next.includes("probeRtkAvailability(pi)");
+  if (!hasWorkingProbe || !next.includes("cargo install --git https://github.com/rtk-ai/rtk")) {
+    return { status: "unsupported", next: source };
+  }
+  return { status: next === source ? "already-patched" : "patched", next };
 }
 
 export default async function (pi: ExtensionAPI) {
@@ -813,87 +910,15 @@ export default async function (pi: ExtensionAPI) {
       return { found: true, ok: false, message: `⚠️ Could not read ${rtkPath}: ${err instanceof Error ? err.message : String(err)}` };
     }
 
-    const oldCheck = `	// Check if rtk binary is available
-	const checkRtkAvailability = async (): Promise<RtkStatus> => {
-		// Cache for 60 seconds
-		if (rtkStatus && Date.now() - rtkStatus.checkedAt < 60000) {
-			return rtkStatus;
-		}
-
-		try {
-			const result = await pi.exec("which", ["rtk"], { timeout: 1000 });
-			if (result.code === 0 && result.stdout?.trim()) {
-				rtkStatus = {
-					available: true,
-					checkedAt: Date.now(),
-					path: result.stdout.trim(),
-				};
-				warnedMissing = false;
-				return rtkStatus;
-			}
-		} catch (_error) {
-			// which command failed
-		}
-
-		rtkStatus = {
-			available: false,
-			checkedAt: Date.now(),
-		};
-		return rtkStatus;
-	};`;
-    const newCheck = `	// Check if rtk binary is available
-	const checkRtkAvailability = async (): Promise<RtkStatus> => {
-		// Cache for 60 seconds
-		if (rtkStatus && Date.now() - rtkStatus.checkedAt < 60000) {
-			return rtkStatus;
-		}
-
-		const markAvailable = (path = "rtk"): RtkStatus => {
-			rtkStatus = {
-				available: true,
-				checkedAt: Date.now(),
-				path,
-			};
-			warnedMissing = false;
-			return rtkStatus;
-		};
-
-		try {
-			const result = await pi.exec("rtk", ["--version"], { timeout: 1000 });
-			if (result.code === 0) return markAvailable();
-		} catch (_error) {
-			// direct probe failed; fall back to PATH locator
-		}
-
-		try {
-			const locator = process.platform === "win32" ? "where.exe" : "which";
-			const result = await pi.exec(locator, ["rtk"], { timeout: 1000 });
-			const path = result.stdout?.trim().split(/\\r?\\n/)[0];
-			if (result.code === 0 && path) return markAvailable(path);
-		} catch (_error) {
-			// locator command failed
-		}
-
-		rtkStatus = {
-			available: false,
-			checkedAt: Date.now(),
-		};
-		return rtkStatus;
-	};`;
-
-    let next = source.includes(oldCheck) ? source.replace(oldCheck, newCheck) : source;
-    next = next.replace(
-      "rtk not found — RTK rewriting disabled. Install: cargo install rtk-ai",
-      "rtk not found — RTK rewriting disabled. Install: cargo install --git https://github.com/rtk-ai/rtk",
-    );
-
-    const hasWorkingProbe =
-      next.includes('pi.exec("rtk", ["--version"]') || next.includes("probeRtkAvailability(pi)");
-    if (!hasWorkingProbe || !next.includes("cargo install --git https://github.com/rtk-ai/rtk")) {
+    const result = patchPixOptimizerRtkSource(source);
+    if (result.status === "unsupported") {
       return { found: true, ok: false, message: `⚠️ Could not apply RTK availability patch in ${rtkPath}.` };
     }
+    if (result.status === "upstream-native") {
+      return { found: true, ok: true, message: `✅ @xynogen/pix-optimizer resolves rtk natively via @xynogen/pix-runtime/binaries (${rtkPath}).` };
+    }
 
-    if (next !== source) await writeFile(rtkPath, next, "utf8");
+    if (result.next !== source) await writeFile(rtkPath, result.next, "utf8");
 
     try {
       const readme = await readFile(readmePath, "utf8");
@@ -903,7 +928,13 @@ export default async function (pi: ExtensionAPI) {
       // README is documentation only; source patch above is the functional fix.
     }
 
-    return { found: true, ok: true, message: `✅ Patched ${rtkPath} RTK probe + install hint.` };
+    return {
+      found: true,
+      ok: true,
+      message: result.status === "patched"
+        ? `✅ Patched ${rtkPath} RTK probe + install hint.`
+        : `✅ ${rtkPath} already has the cross-platform RTK probe + install hint.`,
+    };
   }
 
   async function ensurePixOptimizerRtkPatch(cwd: string): Promise<{ ok: boolean; text: string }> {
@@ -977,9 +1008,32 @@ export default async function (pi: ExtensionAPI) {
     return process.platform === "win32" ? "Windows" : process.platform === "linux" ? "Linux" : process.platform === "darwin" ? "macOS" : process.platform;
   }
 
+  async function resolveHeimdallConfigPath(cwd: string): Promise<{ installed: boolean; universal: boolean; path: string }> {
+    for (const npmRoot of piNpmRoots(cwd)) {
+      const pkgRoot = join(npmRoot, "node_modules", "@casualjim", "pi-heimdall");
+      if (!(await fileExists(join(pkgRoot, "package.json")))) continue;
+      const universal =
+        await fileExists(join(pkgRoot, "lib", "heimdall-config.ts"))
+        || await fileExists(join(pkgRoot, "lib", "heimdall-config.js"));
+      return {
+        installed: true,
+        universal,
+        path: universal
+          ? join(homedir(), ".config", "heimdall", "config.json")
+          : join(getAgentDir(), "heimdall.json"),
+      };
+    }
+    return { installed: false, universal: false, path: join(getAgentDir(), "heimdall.json") };
+  }
+
   /** Keep Heimdall's Linux-only sandbox aligned with the current OS. */
-  async function ensureHeimdallSandboxForPlatform(): Promise<{ ok: boolean; text: string }> {
-    const configPath = join(getAgentDir(), "heimdall.json");
+  async function ensureHeimdallSandboxForPlatform(cwd: string): Promise<{ ok: boolean; text: string }> {
+    const target = await resolveHeimdallConfigPath(cwd);
+    if (!target.installed) {
+      return { ok: true, text: `ℹ️ ${HEIMDALL_PACKAGE_NAME} was not found in global/project npm packages.` };
+    }
+
+    const configPath = target.path;
     const enabled = desiredHeimdallSandboxEnabled();
     const state = enabled ? "enabled" : "disabled";
     const platform = platformLabel();
@@ -992,8 +1046,9 @@ export default async function (pi: ExtensionAPI) {
           ? { ...(existingSandbox as Record<string, unknown>) }
           : {};
 
-      if (sandbox.enabled === enabled) {
-        return { ok: true, text: `✅ Heimdall sandbox already ${state} on ${platform}.` };
+      // Universal pi-heimdall (>=0.3.32) defaults sandbox.enabled to false in default.jsonc.
+      if (sandbox.enabled === enabled || (target.universal && !enabled && sandbox.enabled === undefined)) {
+        return { ok: true, text: `✅ Heimdall sandbox already ${state} on ${platform} (${configPath}).` };
       }
 
       sandbox.enabled = enabled;
@@ -1046,7 +1101,7 @@ export default async function (pi: ExtensionAPI) {
     signal?.throwIfAborted();
     const subagents = await ensurePiSubagentsAsyncWorkflowIdPatch(cwd);
     signal?.throwIfAborted();
-    const heimdall = await ensureHeimdallSandboxForPlatform();
+    const heimdall = await ensureHeimdallSandboxForPlatform(cwd);
     signal?.throwIfAborted();
     return {
       ok: peers.ok && pixPretty.ok && pix.ok && hermes.ok && intercom.ok && subagents.ok && heimdall.ok,
@@ -1439,7 +1494,10 @@ export default async function (pi: ExtensionAPI) {
     }),
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       signal?.throwIfAborted();
-      const scope: UpdateScope = params.scope ?? "all";
+      const scope: UpdateScope =
+        params.scope === "self" || params.scope === "extensions" || params.scope === "all"
+          ? params.scope
+          : "all";
       const checkOnly = params.check ?? false;
       const force = (params.force ?? false) && scope === "self";
 
@@ -1511,7 +1569,7 @@ export default async function (pi: ExtensionAPI) {
    * ──────────────────────────────────────────── */
 
   pi.registerCommand("update", {
-    description: "Update pi and/or packages. Usage: /update [self|extensions|check]",
+    description: "Update pi, packages, or model catalogs. Usage: /update [self|extensions|models|check]",
     handler: async (_args, ctx) => {
       const argStr = (Array.isArray(_args) ? _args.join(" ") : String(_args ?? "")).trim().toLowerCase();
 
@@ -1527,8 +1585,20 @@ export default async function (pi: ExtensionAPI) {
         return;
       }
 
+      if (argStr === "models") {
+        ctx.ui.setStatus("pi-update", "Refreshing model catalogs…");
+        const result = await runPi(["update", "--models"], 180_000);
+        ctx.ui.setStatus("pi-update", result.success ? "Done!" : "Failed!");
+        if (result.success) {
+          ctx.ui.notify(`✅ Model catalogs refreshed.\n\n${result.output || ""}`.trim(), "info");
+        } else {
+          ctx.ui.notify(`❌ Model catalog refresh failed:\n${result.output.slice(0, 1200)}`, "error");
+        }
+        return;
+      }
+
       if (!["", "self", "extensions", "ext"].includes(argStr)) {
-        ctx.ui.notify("Nutzung: /update [self|extensions|check]", "warning");
+        ctx.ui.notify("Nutzung: /update [self|extensions|models|check]", "warning");
         return;
       }
       const scope: UpdateScope =
